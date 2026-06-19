@@ -4,12 +4,18 @@ import {
   endOfMonth,
   startOfWeek,
   endOfWeek,
+  startOfDay,
+  endOfDay,
   eachDayOfInterval,
   addMonths,
   subMonths,
-  format,
+  addWeeks,
+  subWeeks,
+  addDays,
+  subDays,
   isSameMonth,
-  isSameDay,
+  isSameYear,
+  format,
   isToday,
   parseISO,
 } from 'date-fns'
@@ -19,23 +25,38 @@ import { useProfiles } from '../hooks/useProfiles'
 import { useReminders, requestNotificationPermission } from '../hooks/useReminders'
 import EventModal from './EventModal'
 import SettingsModal from './SettingsModal'
+import TimeGridView from './TimeGridView'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const VIEWS = ['month', 'week', 'day']
 
 export default function CalendarView({ session }) {
   const userId = session.user.id
   const [cursor, setCursor] = useState(new Date())
+  const [view, setView] = useState('month')
   const { profiles } = useProfiles()
   const [modal, setModal] = useState(null) // { mode, event?, date? } or null
   const [showSettings, setShowSettings] = useState(false)
 
-  // Calendar grid spans full weeks around the visible month.
-  const monthStart = startOfMonth(cursor)
-  const monthEnd = endOfMonth(cursor)
-  const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 })
-  const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
+  // The visible date range depends on the view. Month spans full weeks so the
+  // grid is always rectangular; week is Mon–Sun; day is a single date.
+  const { rangeStart, rangeEnd } = useMemo(() => {
+    if (view === 'month') {
+      return {
+        rangeStart: startOfWeek(startOfMonth(cursor), { weekStartsOn: 1 }),
+        rangeEnd: endOfWeek(endOfMonth(cursor), { weekStartsOn: 1 }),
+      }
+    }
+    if (view === 'week') {
+      return {
+        rangeStart: startOfWeek(cursor, { weekStartsOn: 1 }),
+        rangeEnd: endOfWeek(cursor, { weekStartsOn: 1 }),
+      }
+    }
+    return { rangeStart: startOfDay(cursor), rangeEnd: endOfDay(cursor) }
+  }, [view, cursor])
 
-  const { events, loading } = useEvents(gridStart, gridEnd)
+  const { events, loading } = useEvents(rangeStart, rangeEnd)
   useReminders(events)
 
   useEffect(() => {
@@ -43,11 +64,12 @@ export default function CalendarView({ session }) {
   }, [])
 
   const days = useMemo(
-    () => eachDayOfInterval({ start: gridStart, end: gridEnd }),
-    [gridStart.getTime(), gridEnd.getTime()]
+    () => eachDayOfInterval({ start: rangeStart, end: rangeEnd }),
+    [rangeStart.getTime(), rangeEnd.getTime()]
   )
 
-  // Group events by calendar day (an event can span multiple days).
+  // Group events by calendar day (an event can span multiple days). Used by the
+  // month grid; the time-grid views do their own per-day layout.
   const eventsByDay = useMemo(() => {
     const map = {}
     for (const day of days) {
@@ -67,6 +89,12 @@ export default function CalendarView({ session }) {
     return profiles[ev.owner_id]?.color || (ev.owner_id === userId ? '#7c6fd6' : '#4a90e2')
   }
 
+  function step(dir) {
+    if (view === 'month') setCursor((c) => (dir > 0 ? addMonths(c, 1) : subMonths(c, 1)))
+    else if (view === 'week') setCursor((c) => (dir > 0 ? addWeeks(c, 1) : subWeeks(c, 1)))
+    else setCursor((c) => (dir > 0 ? addDays(c, 1) : subDays(c, 1)))
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
   }
@@ -81,12 +109,23 @@ export default function CalendarView({ session }) {
       <header className="topbar">
         <div className="brand">Our Calendar</div>
         <div className="month-nav">
-          <button className="icon-btn" onClick={() => setCursor(subMonths(cursor, 1))} aria-label="Previous month">‹</button>
-          <h2>{format(cursor, 'MMMM yyyy')}</h2>
-          <button className="icon-btn" onClick={() => setCursor(addMonths(cursor, 1))} aria-label="Next month">›</button>
+          <button className="icon-btn" onClick={() => step(-1)} aria-label="Previous">‹</button>
+          <h2>{title(view, cursor, rangeStart, rangeEnd)}</h2>
+          <button className="icon-btn" onClick={() => step(1)} aria-label="Next">›</button>
           <button className="btn ghost today-btn" onClick={() => setCursor(new Date())}>Today</button>
         </div>
         <div className="topbar-right">
+          <div className="view-switch">
+            {VIEWS.map((v) => (
+              <button
+                key={v}
+                className={`view-btn ${view === v ? 'active' : ''}`}
+                onClick={() => setView(v)}
+              >
+                {v[0].toUpperCase() + v.slice(1)}
+              </button>
+            ))}
+          </div>
           <span className="legend">
             <span className="dot" style={{ background: myColor }} /> {myName}
             {partner && (
@@ -102,50 +141,63 @@ export default function CalendarView({ session }) {
         </div>
       </header>
 
-      <div className="weekday-row">
-        {WEEKDAYS.map((d) => (
-          <div key={d} className="weekday">{d}</div>
-        ))}
-      </div>
+      {view === 'month' ? (
+        <>
+          <div className="weekday-row">
+            {WEEKDAYS.map((d) => (
+              <div key={d} className="weekday">{d}</div>
+            ))}
+          </div>
 
-      <div className="month-grid">
-        {days.map((day) => {
-          const key = format(day, 'yyyy-MM-dd')
-          const dayEvents = eventsByDay[key] || []
-          return (
-            <div
-              key={key}
-              className={[
-                'day-cell',
-                isSameMonth(day, cursor) ? '' : 'outside',
-                isToday(day) ? 'today' : '',
-              ].join(' ').trim()}
-              onClick={() => setModal({ mode: 'create', date: day })}
-            >
-              <div className="day-number">{format(day, 'd')}</div>
-              <div className="day-events">
-                {dayEvents.map((ev) => (
-                  <button
-                    key={ev.id}
-                    className={`event-chip ${ev.is_shared ? 'shared' : ''}`}
-                    style={ev.is_shared ? undefined : { background: ownerColor(ev) }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setModal({ mode: 'view', event: ev })
-                    }}
-                    title={ev.title}
-                  >
-                    {!ev.all_day && (
-                      <span className="chip-time">{format(parseISO(ev.start_at), 'HH:mm')}</span>
-                    )}
-                    <span className="chip-title">{ev.title}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+          <div className="month-grid">
+            {days.map((day) => {
+              const key = format(day, 'yyyy-MM-dd')
+              const dayEvents = eventsByDay[key] || []
+              return (
+                <div
+                  key={key}
+                  className={[
+                    'day-cell',
+                    isSameMonth(day, cursor) ? '' : 'outside',
+                    isToday(day) ? 'today' : '',
+                  ].join(' ').trim()}
+                  onClick={() => setModal({ mode: 'create', date: day })}
+                >
+                  <div className="day-number">{format(day, 'd')}</div>
+                  <div className="day-events">
+                    {dayEvents.map((ev) => (
+                      <button
+                        key={ev.id}
+                        className={`event-chip ${ev.is_shared ? 'shared' : ''}`}
+                        style={ev.is_shared ? undefined : { background: ownerColor(ev) }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setModal({ mode: 'view', event: ev })
+                        }}
+                        title={ev.title}
+                      >
+                        {!ev.all_day && (
+                          <span className="chip-time">{format(parseISO(ev.start_at), 'HH:mm')}</span>
+                        )}
+                        <span className="chip-title">{ev.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      ) : (
+        <TimeGridView
+          days={days}
+          events={events}
+          userId={userId}
+          profiles={profiles}
+          onSelectEvent={(ev) => setModal({ mode: 'view', event: ev })}
+          onSelectSlot={(date) => setModal({ mode: 'create', date })}
+        />
+      )}
 
       {loading && <div className="loading-bar">Loading…</div>}
 
@@ -169,9 +221,16 @@ export default function CalendarView({ session }) {
   )
 }
 
-// Local helper: midnight of a given date (avoids importing one more fn).
-function startOfDay(d) {
-  const x = new Date(d)
-  x.setHours(0, 0, 0, 0)
-  return x
+// Heading text for the current view and date range.
+function title(view, cursor, rangeStart, rangeEnd) {
+  if (view === 'month') return format(cursor, 'MMMM yyyy')
+  if (view === 'day') return format(cursor, 'EEEE, MMM d, yyyy')
+  // week: "Jun 16 – 22, 2026" or spanning months/years when needed.
+  if (!isSameYear(rangeStart, rangeEnd)) {
+    return `${format(rangeStart, 'MMM d, yyyy')} – ${format(rangeEnd, 'MMM d, yyyy')}`
+  }
+  if (!isSameMonth(rangeStart, rangeEnd)) {
+    return `${format(rangeStart, 'MMM d')} – ${format(rangeEnd, 'MMM d, yyyy')}`
+  }
+  return `${format(rangeStart, 'MMM d')} – ${format(rangeEnd, 'd, yyyy')}`
 }

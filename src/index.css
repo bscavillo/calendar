@@ -261,6 +261,124 @@ textarea { resize: vertical; }
 
 .loading-bar { text-align: center; color: var(--muted); padding: 16px; }
 
+/* ---------- View switcher ---------- */
+.view-switch {
+  display: inline-flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2px;
+  gap: 2px;
+}
+.view-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+.view-btn:hover { color: var(--purple-dark); }
+.view-btn.active {
+  background: linear-gradient(135deg, var(--purple), var(--blue));
+  color: #fff;
+}
+
+/* ---------- Time grid (week / day) ---------- */
+.timegrid {
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.timegrid .tg-head,
+.timegrid .tg-allday {
+  display: grid;
+  grid-template-columns: 56px repeat(var(--tg-cols), 1fr);
+}
+.week-view { --tg-cols: 7; }
+.day-view { --tg-cols: 1; }
+
+.tg-head { border-bottom: 1px solid var(--border); }
+.tg-day-head {
+  text-align: center;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-left: 1px solid var(--border);
+}
+.tg-dow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; }
+.tg-date { font-size: 1.05rem; font-weight: 700; }
+.tg-day-head.today .tg-date {
+  background: linear-gradient(135deg, var(--purple), var(--blue));
+  color: #fff;
+  border-radius: 50%;
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  margin: 0 auto;
+}
+
+.tg-allday { border-bottom: 1px solid var(--border); min-height: 34px; }
+.tg-allday-label {
+  font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.03em;
+  color: var(--muted); font-weight: 700;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 6px;
+}
+.tg-allday-col {
+  border-left: 1px solid var(--border);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tg-body {
+  display: grid;
+  grid-template-columns: 56px repeat(var(--tg-cols), 1fr);
+  max-height: 64vh;
+  overflow-y: auto;
+  position: relative;
+}
+.tg-gutter { position: relative; }
+.tg-hour-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: right;
+  padding-right: 6px;
+  transform: translateY(-7px);
+}
+.tg-col {
+  position: relative;
+  border-left: 1px solid var(--border);
+}
+.tg-hour-line {
+  position: absolute;
+  left: 0; right: 0;
+  border-top: 1px solid var(--border);
+  pointer-events: none;
+}
+.tg-event {
+  position: absolute;
+  border: none;
+  border-radius: 6px;
+  padding: 2px 6px;
+  color: #fff;
+  font-size: 0.72rem;
+  overflow: hidden;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  box-shadow: 0 1px 3px rgba(43, 39, 69, 0.2);
+}
+.tg-event:hover { filter: brightness(1.07); z-index: 5; }
+.tg-event.shared { background: linear-gradient(135deg, var(--shared), var(--blue)); }
+.tg-event-time { font-weight: 700; opacity: 0.9; }
+.tg-event-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* ---------- Modal ---------- */
 .backdrop {
   position: fixed;
