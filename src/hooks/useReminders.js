@@ -24,7 +24,7 @@ export function useReminders(events) {
             hour: '2-digit',
             minute: '2-digit',
           })
-          new Notification('💜 Upcoming: ' + ev.title, {
+          new Notification('Upcoming: ' + ev.title, {
             body: `Starts at ${when}${ev.location ? ' · ' + ev.location : ''}`,
           })
         }

@@ -39,7 +39,7 @@ export default function Login() {
   return (
     <div className="centered-screen">
       <form className="card login-card" onSubmit={handleSubmit}>
-        <h1>💜 Our Calendar</h1>
+        <h1>Our Calendar</h1>
         <p className="muted">{mode === 'signin' ? 'Welcome back.' : 'Create your account.'}</p>
 
         {mode === 'signup' && (

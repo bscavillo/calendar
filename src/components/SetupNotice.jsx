@@ -2,7 +2,7 @@ export default function SetupNotice() {
   return (
     <div className="centered-screen">
       <div className="card setup-card">
-        <h1>💜 Our Calendar</h1>
+        <h1>Our Calendar</h1>
         <p>Almost there — the app just needs to be connected to your free Supabase project.</p>
         <ol>
           <li>Create a free project at <strong>supabase.com</strong></li>
