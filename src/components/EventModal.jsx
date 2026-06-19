@@ -33,7 +33,7 @@ export default function EventModal({ session, profiles, initial, onClose }) {
 function ViewMode({ event, userId, profiles, onClose, session }) {
   const [editing, setEditing] = useState(false)
   const isOwner = event.owner_id === userId
-  const ownerName = event.owner_id === userId ? 'You' : (profiles[event.owner_id] || 'Partner')
+  const ownerName = event.owner_id === userId ? 'You' : (profiles[event.owner_id]?.display_name || 'Partner')
 
   if (editing) {
     return <FormMode initial={{ mode: 'edit', event }} session={session} onClose={onClose} />
@@ -55,7 +55,7 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
         <div className={`modal-accent ${event.is_shared ? 'shared' : isOwner ? 'mine' : 'partner'}`} />
         <h2>{event.title}</h2>
         <p className="muted">
-          {event.is_shared ? '💞 Shared' : ownerName}
+          {event.is_shared ? 'Shared' : ownerName}
         </p>
         <dl className="detail-list">
           <div>
@@ -207,7 +207,7 @@ function FormMode({ initial, session, onClose }) {
 
         <label className="checkbox-row shared-toggle">
           <input type="checkbox" checked={isShared} onChange={(e) => setIsShared(e.target.checked)} />
-          💞 Shared event (belongs to both of us)
+          Shared event (belongs to both of us)
         </label>
 
         {error && <div className="alert error">{error}</div>}

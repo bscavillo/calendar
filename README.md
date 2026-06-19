@@ -1,4 +1,4 @@
-# 💜 Our Calendar
+# Our Calendar
 
 A private shared calendar for two people. See each other's appointments and plans at a glance,
 add events, mark some as shared, and get reminders before they start.
@@ -8,15 +8,13 @@ realtime sync.
 
 ## Features
 
-- 🔐 Simple email/password login for the two of you
-- 🗓️ Month view with everyone's events, color-coded:
-  - **Purple** = your events
-  - **Blue** = your partner's events
-  - **Purple→blue gradient** = shared events (date night, trips…)
-- ✏️ Add / edit / delete your own events (you can't edit each other's — only view)
-- 💞 Mark events as **shared**
-- ⚡ Live sync — when one of you changes something, the other sees it instantly
-- 🔔 Browser reminders before an event
+- Simple email/password login for the two of you
+- Month view with everyone's events, color-coded per person
+- Each person picks their own display name and color in **Settings**
+- Shared events (date nights, trips) get a distinct gradient
+- Add / edit / delete your own events (you can't edit each other's — only view)
+- Live sync — when one of you changes something, the other sees it instantly
+- Browser reminders before an event
 
 > **Reminder caveat:** reminders fire as browser notifications **while the app tab is open**.
 > Notifications when the app is fully closed would need a paid backend / push service, which the
@@ -73,11 +71,13 @@ The app is a static site, so it deploys free on **Vercel**, **Netlify**, or **Cl
 src/
   lib/supabaseClient.js   – Supabase connection
   hooks/useEvents.js      – fetch + realtime subscription for events
+  hooks/useProfiles.js    – fetch + realtime subscription for profiles
   hooks/useReminders.js   – browser notification scheduling
   components/
     Login.jsx             – sign in / sign up
     CalendarView.jsx      – month grid + navigation
     EventModal.jsx        – view / create / edit / delete an event
+    SettingsModal.jsx     – edit your display name and color
     SetupNotice.jsx       – shown until .env is configured
 supabase_schema.sql       – run this in Supabase once
 ```

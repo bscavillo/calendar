@@ -182,9 +182,21 @@ textarea { resize: vertical; }
 
 .legend { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); }
 .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; margin-left: 8px; }
-.dot.mine { background: var(--purple); }
-.dot.partner { background: var(--blue); }
-.dot.shared { background: var(--shared); }
+.dot.shared { background: linear-gradient(135deg, var(--shared), var(--blue)); }
+
+/* ---------- Color swatches (settings) ---------- */
+.swatch-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.swatch {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: 0 0 0 1px var(--border);
+  padding: 0;
+}
+.swatch.selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--text);
+}
 
 /* ---------- Calendar grid ---------- */
 .weekday-row, .month-grid {
@@ -245,8 +257,6 @@ textarea { resize: vertical; }
 .event-chip:hover { filter: brightness(1.07); }
 .event-chip .chip-time { font-weight: 700; opacity: 0.9; }
 .event-chip .chip-title { overflow: hidden; text-overflow: ellipsis; }
-.event-chip.mine { background: var(--purple); }
-.event-chip.partner { background: var(--blue); }
 .event-chip.shared { background: linear-gradient(135deg, var(--shared), var(--blue)); }
 
 .loading-bar { text-align: center; color: var(--muted); padding: 16px; }

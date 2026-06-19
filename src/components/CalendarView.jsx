@@ -15,16 +15,19 @@ import {
 } from 'date-fns'
 import { supabase } from '../lib/supabaseClient'
 import { useEvents } from '../hooks/useEvents'
+import { useProfiles } from '../hooks/useProfiles'
 import { useReminders, requestNotificationPermission } from '../hooks/useReminders'
 import EventModal from './EventModal'
+import SettingsModal from './SettingsModal'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 export default function CalendarView({ session }) {
   const userId = session.user.id
   const [cursor, setCursor] = useState(new Date())
-  const [profiles, setProfiles] = useState({})
+  const { profiles } = useProfiles()
   const [modal, setModal] = useState(null) // { mode, event?, date? } or null
+  const [showSettings, setShowSettings] = useState(false)
 
   // Calendar grid spans full weeks around the visible month.
   const monthStart = startOfMonth(cursor)
@@ -37,19 +40,6 @@ export default function CalendarView({ session }) {
 
   useEffect(() => {
     requestNotificationPermission()
-  }, [])
-
-  // Load display names so we can label whose event is whose.
-  useEffect(() => {
-    supabase
-      .from('profiles')
-      .select('id, display_name')
-      .then(({ data }) => {
-        if (!data) return
-        const map = {}
-        for (const p of data) map[p.id] = p.display_name
-        setProfiles(map)
-      })
   }, [])
 
   const days = useMemo(
@@ -71,21 +61,25 @@ export default function CalendarView({ session }) {
     return map
   }, [days, events])
 
-  function eventKind(ev) {
-    if (ev.is_shared) return 'shared'
-    return ev.owner_id === userId ? 'mine' : 'partner'
+  // The chip color comes from the owner's chosen profile color; shared events
+  // get a distinct gradient handled in CSS.
+  function ownerColor(ev) {
+    return profiles[ev.owner_id]?.color || (ev.owner_id === userId ? '#7c6fd6' : '#4a90e2')
   }
 
   async function signOut() {
     await supabase.auth.signOut()
   }
 
-  const myName = profiles[userId] || session.user.email.split('@')[0]
+  const me = profiles[userId]
+  const myName = me?.display_name || session.user.email.split('@')[0]
+  const myColor = me?.color || '#7c6fd6'
+  const partner = Object.values(profiles).find((p) => p.id !== userId)
 
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand">💜 Our Calendar</div>
+        <div className="brand">Our Calendar</div>
         <div className="month-nav">
           <button className="icon-btn" onClick={() => setCursor(subMonths(cursor, 1))} aria-label="Previous month">‹</button>
           <h2>{format(cursor, 'MMMM yyyy')}</h2>
@@ -94,11 +88,16 @@ export default function CalendarView({ session }) {
         </div>
         <div className="topbar-right">
           <span className="legend">
-            <span className="dot mine" /> {myName}
-            <span className="dot partner" /> Partner
+            <span className="dot" style={{ background: myColor }} /> {myName}
+            {partner && (
+              <>
+                <span className="dot" style={{ background: partner.color }} /> {partner.display_name}
+              </>
+            )}
             <span className="dot shared" /> Shared
           </span>
           <button className="btn primary" onClick={() => setModal({ mode: 'create', date: new Date() })}>+ New event</button>
+          <button className="btn ghost" onClick={() => setShowSettings(true)}>Settings</button>
           <button className="btn ghost" onClick={signOut}>Sign out</button>
         </div>
       </header>
@@ -128,7 +127,8 @@ export default function CalendarView({ session }) {
                 {dayEvents.map((ev) => (
                   <button
                     key={ev.id}
-                    className={`event-chip ${eventKind(ev)}`}
+                    className={`event-chip ${ev.is_shared ? 'shared' : ''}`}
+                    style={ev.is_shared ? undefined : { background: ownerColor(ev) }}
                     onClick={(e) => {
                       e.stopPropagation()
                       setModal({ mode: 'view', event: ev })
@@ -155,6 +155,14 @@ export default function CalendarView({ session }) {
           profiles={profiles}
           initial={modal}
           onClose={() => setModal(null)}
+        />
+      )}
+
+      {showSettings && (
+        <SettingsModal
+          session={session}
+          profile={me}
+          onClose={() => setShowSettings(false)}
         />
       )}
     </div>
