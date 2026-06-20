@@ -5,9 +5,8 @@
    color transitions. Most styling lives inline as utilities; only the
    palette and a few repeated primitives are defined here. */
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: sans-serif;
 
-  /* Owner + accent colors */
   --color-mine: #a99ce6;        /* pastel purple — default "you" */
   --color-mine-strong: #8b7bd4;
   --color-partner: #9fbef0;     /* pastel blue — default partner */

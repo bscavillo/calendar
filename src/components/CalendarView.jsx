@@ -140,7 +140,7 @@ export default function CalendarView({ session }) {
   const myName = me?.display_name || session.user.email.split('@')[0]
 
   return (
-    <div className="mx-auto max-w-[1200px] p-3 sm:p-5">
+    <div className="mx-auto max-w-[1200px] p-3 sm:p-5 min-[1333px]:max-w-[90vw]">
       <header className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-4">
         <div className="hidden text-xl leading-none font-bold text-mine-strong sm:block">Calendar</div>
         <div className="relative flex min-w-0 items-center gap-2">
