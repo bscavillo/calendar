@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 // A small palette so each partner can pick a personal color without a full
-// color picker. The first two are the classic purple / blue defaults.
+// color picker. Pastel purple / blue lead as the defaults.
 const PALETTE = [
-  '#7c6fd6', '#4a90e2', '#e2557a', '#e08e3c',
-  '#3cb371', '#9b59b6', '#16a3a3', '#d6336c',
+  '#a99ce6', '#9fbef0', '#e7a8cd', '#c2a892',
+  '#9fd6c2', '#d6b3e6', '#e6c79f', '#a9c9e6',
 ]
 
 export default function SettingsModal({ session, profile, onClose }) {
@@ -35,29 +35,34 @@ export default function SettingsModal({ session, profile, onClose }) {
   }
 
   return (
-    <div className="backdrop" onClick={onClose}>
-      <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
-        <h2>Settings</h2>
-        <p className="muted">How you show up on the calendar.</p>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-5 backdrop-blur-sm" onClick={onClose}>
+      <form
+        className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-sm bg-surface p-7 shadow-[0_20px_60px_rgba(63,58,71,0.3)]"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={handleSubmit}
+      >
+        <h2 className="text-xl font-semibold">Settings</h2>
+        <p className="mt-1 text-muted">How you show up on the calendar.</p>
 
-        <label>
+        <label className="field-label">
           Your name
           <input
             autoFocus
             required
+            className="field"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="e.g. Benedict"
           />
         </label>
 
-        <label>Your color</label>
-        <div className="swatch-row">
+        <label className="field-label">Your color</label>
+        <div className="mt-2 flex flex-wrap gap-2.5">
           {PALETTE.map((c) => (
             <button
               type="button"
               key={c}
-              className={`swatch ${c === color ? 'selected' : ''}`}
+              className={`h-8 w-8 rounded-sm p-0 ${c === color ? 'ring-2 ring-ink' : 'ring-1 ring-line'}`}
               style={{ background: c }}
               onClick={() => setColor(c)}
               aria-label={`Choose color ${c}`}
@@ -65,11 +70,11 @@ export default function SettingsModal({ session, profile, onClose }) {
           ))}
         </div>
 
-        {error && <div className="alert error">{error}</div>}
+        {error && <div className="mt-3.5 rounded-sm bg-danger/15 px-3 py-2.5 text-sm text-danger-strong">{error}</div>}
 
-        <div className="modal-actions">
-          <button type="button" className="btn ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn primary" disabled={busy}>
+        <div className="mt-5 flex justify-end gap-2.5">
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn btn-primary" disabled={busy}>
             {busy ? 'Saving…' : 'Save'}
           </button>
         </div>

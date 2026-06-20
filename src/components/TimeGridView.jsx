@@ -16,7 +16,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
   }, [])
 
   function ownerColor(ev) {
-    return profiles[ev.owner_id]?.color || (ev.owner_id === userId ? '#7c6fd6' : '#4a90e2')
+    return profiles[ev.owner_id]?.color || (ev.owner_id === userId ? '#a99ce6' : '#9fbef0')
   }
 
   // Split events per day into all-day vs timed, with timed laid out in columns.
@@ -42,43 +42,49 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
     })
   }, [days, events])
 
-  const isSingleDay = days.length === 1
+  const gridCols = { gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }
 
   return (
-    <div className={`timegrid ${isSingleDay ? 'day-view' : 'week-view'}`}>
-      <div className="tg-head">
-        <div className="tg-gutter-head" />
+    <div className="overflow-hidden rounded-sm bg-surface shadow-[0_8px_30px_rgba(120,110,160,0.12)]">
+      <div className="grid border-b border-line" style={gridCols}>
+        <div />
         {perDay.map(({ day }) => (
-          <div key={day.toISOString()} className={`tg-day-head ${isToday(day) ? 'today' : ''}`}>
-            <span className="tg-dow">{format(day, 'EEE')}</span>
-            <span className="tg-date">{format(day, 'd')}</span>
+          <div key={day.toISOString()} className="flex flex-col gap-0.5 border-l border-line px-1 py-2 text-center">
+            <span className="text-xs font-bold tracking-wide text-muted uppercase">{format(day, 'EEE')}</span>
+            <span
+              className={`text-lg font-bold ${
+                isToday(day) ? 'mx-auto grid h-7 w-7 place-items-center rounded-sm bg-mine text-white' : ''
+              }`}
+            >
+              {format(day, 'd')}
+            </span>
           </div>
         ))}
       </div>
 
-      <div className="tg-allday">
-        <div className="tg-gutter-head tg-allday-label">all-day</div>
+      <div className="grid min-h-[34px] border-b border-line" style={gridCols}>
+        <div className="flex items-center justify-end pr-1.5 text-[0.66rem] font-bold tracking-wide text-muted uppercase">all-day</div>
         {perDay.map(({ day, allDay }) => (
-          <div key={day.toISOString()} className="tg-allday-col">
+          <div key={day.toISOString()} className="flex flex-col gap-0.5 border-l border-line p-1">
             {allDay.map((ev) => (
               <button
                 key={ev.id}
-                className={`event-chip ${ev.is_shared ? 'shared' : ''}`}
+                className={`chip ${ev.is_shared ? 'bg-shared' : ''}`}
                 style={ev.is_shared ? undefined : { background: ownerColor(ev) }}
                 onClick={() => onSelectEvent(ev)}
                 title={ev.title}
               >
-                <span className="chip-title">{ev.title}</span>
+                <span className="overflow-hidden text-ellipsis">{ev.title}</span>
               </button>
             ))}
           </div>
         ))}
       </div>
 
-      <div className="tg-body" ref={scrollRef}>
-        <div className="tg-gutter">
+      <div className="relative grid max-h-[64vh] overflow-y-auto" style={gridCols} ref={scrollRef}>
+        <div className="relative">
           {HOURS.map((h) => (
-            <div key={h} className="tg-hour-label" style={{ height: HOUR_HEIGHT }}>
+            <div key={h} className="-translate-y-[7px] pr-1.5 text-right text-[0.7rem] text-muted" style={{ height: HOUR_HEIGHT }}>
               {h === 0 ? '' : format(new Date(2000, 0, 1, h), 'HH:mm')}
             </div>
           ))}
@@ -86,17 +92,19 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
         {perDay.map(({ day, timed }) => (
           <div
             key={day.toISOString()}
-            className="tg-col"
+            className="relative border-l border-line"
             style={{ height: HOUR_HEIGHT * 24 }}
             onClick={(e) => handleColumnClick(e, day, onSelectSlot)}
           >
             {HOURS.map((h) => (
-              <div key={h} className="tg-hour-line" style={{ top: h * HOUR_HEIGHT }} />
+              <div key={h} className="pointer-events-none absolute right-0 left-0 border-t border-line" style={{ top: h * HOUR_HEIGHT }} />
             ))}
             {timed.map(({ ev, top, height, lane, lanes }) => (
               <button
                 key={ev.id}
-                className={`tg-event ${ev.is_shared ? 'shared' : ''}`}
+                className={`absolute flex flex-col overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-[0.72rem] leading-tight text-white shadow-sm hover:z-[5] hover:brightness-105 ${
+                  ev.is_shared ? 'bg-shared' : ''
+                }`}
                 style={{
                   top: (top / 60) * HOUR_HEIGHT,
                   height: (height / 60) * HOUR_HEIGHT - 2,
@@ -110,8 +118,8 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
                 }}
                 title={ev.title}
               >
-                <span className="tg-event-time">{format(parseISO(ev.start_at), 'HH:mm')}</span>
-                <span className="tg-event-title">{ev.title}</span>
+                <span className="font-bold opacity-90">{format(parseISO(ev.start_at), 'HH:mm')}</span>
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap">{ev.title}</span>
               </button>
             ))}
           </div>

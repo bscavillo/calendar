@@ -66,33 +66,33 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
 
   return (
     <Backdrop onClose={onClose}>
-      <div className="modal">
-        <div className={`modal-accent ${event.is_shared ? 'shared' : isOwner ? 'mine' : 'partner'}`} />
-        <h2>{event.title}</h2>
-        <p className="muted">
+      <div className={MODAL}>
+        <div className={`mb-3.5 h-1.5 w-[60px] rounded-sm ${ACCENT[event.is_shared ? 'shared' : isOwner ? 'mine' : 'partner']}`} />
+        <h2 className="text-xl font-semibold">{event.title}</h2>
+        <p className="mt-1 text-muted">
           {event.is_shared ? 'Shared' : ownerName}
         </p>
-        <dl className="detail-list">
-          <div>
-            <dt>When</dt>
-            <dd>
+        <dl className="mt-4">
+          <div className="mb-3">
+            <dt className="text-xs font-bold tracking-wide text-muted uppercase">When</dt>
+            <dd className="mt-0.5 text-base">
               {event.all_day ? (
                 formatDateInZone(start, myTz) + ' · All day'
               ) : (
                 <>
-                  <div className="when-zone">
+                  <div className="flex flex-wrap items-baseline gap-1.5">
                     {formatDateInZone(start, myTz)} ·{' '}
                     {formatTimeInZone(start, myTz)} – {formatTimeInZone(end, myTz)}
-                    <span className="zone-tag">
+                    <span className="text-[0.72rem] font-bold tracking-wide text-muted uppercase">
                       {zoneAbbrev(myTz, start)} · your time
                     </span>
                   </div>
                   {showPartnerTime && (
-                    <div className="when-zone partner-zone">
+                    <div className="mt-1 flex flex-wrap items-baseline gap-1.5 text-muted">
                       {formatDateInZone(start, partnerTz)} ·{' '}
                       {formatTimeInZone(start, partnerTz)} –{' '}
                       {formatTimeInZone(end, partnerTz)}
-                      <span className="zone-tag">
+                      <span className="text-[0.72rem] font-bold tracking-wide text-muted uppercase">
                         {zoneAbbrev(partnerTz, start)} ·{' '}
                         {partner.display_name || zoneCity(partnerTz)}&rsquo;s time
                       </span>
@@ -103,22 +103,22 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
             </dd>
           </div>
           {event.location && (
-            <div><dt>Where</dt><dd>{event.location}</dd></div>
+            <div className="mb-3"><dt className="text-xs font-bold tracking-wide text-muted uppercase">Where</dt><dd className="mt-0.5 text-base">{event.location}</dd></div>
           )}
           {event.description && (
-            <div><dt>Notes</dt><dd>{event.description}</dd></div>
+            <div className="mb-3"><dt className="text-xs font-bold tracking-wide text-muted uppercase">Notes</dt><dd className="mt-0.5 text-base">{event.description}</dd></div>
           )}
         </dl>
-        <div className="modal-actions">
-          <button className="btn ghost" onClick={onClose}>Close</button>
+        <div className="mt-5 flex justify-end gap-2.5">
+          <button className="btn btn-ghost" onClick={onClose}>Close</button>
           {isOwner && (
             <>
-              <button className="btn danger" onClick={handleDelete}>Delete</button>
-              <button className="btn primary" onClick={() => setEditing(true)}>Edit</button>
+              <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
+              <button className="btn btn-primary" onClick={() => setEditing(true)}>Edit</button>
             </>
           )}
         </div>
-        {!isOwner && <p className="hint">Only {ownerName.toLowerCase() === 'you' ? 'you' : ownerName} can edit this event.</p>}
+        {!isOwner && <p className="mt-3 text-center text-sm text-muted">Only {ownerName.toLowerCase() === 'you' ? 'you' : ownerName} can edit this event.</p>}
       </div>
     </Backdrop>
   )
@@ -200,66 +200,66 @@ function FormMode({ initial, session, onClose }) {
 
   return (
     <Backdrop onClose={onClose}>
-      <form className="modal" onSubmit={handleSubmit}>
-        <h2>{editing ? 'Edit event' : 'New event'}</h2>
+      <form className={MODAL} onSubmit={handleSubmit}>
+        <h2 className="text-xl font-semibold">{editing ? 'Edit event' : 'New event'}</h2>
 
-        <label>
+        <label className="field-label">
           Title
-          <input autoFocus required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Dinner with Mom" />
+          <input autoFocus required className="field" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Dinner with Mom" />
         </label>
 
-        <label>
+        <label className="field-label">
           Date
-          <input type="date" required value={dateStr} onChange={(e) => setDateStr(e.target.value)} />
+          <input type="date" required className="field" value={dateStr} onChange={(e) => setDateStr(e.target.value)} />
         </label>
 
-        <label className="checkbox-row">
-          <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />
+        <label className="mt-3.5 flex items-center gap-2 font-semibold text-ink">
+          <input type="checkbox" className="h-4 w-4" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />
           All day
         </label>
 
         {!allDay && (
-          <div className="time-row">
-            <label>
+          <div className="flex gap-3">
+            <label className="field-label flex-1">
               Start
-              <input type="time" required value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+              <input type="time" required className="field" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
             </label>
-            <label>
+            <label className="field-label flex-1">
               End
-              <input type="time" required value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+              <input type="time" required className="field" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
             </label>
           </div>
         )}
 
-        <label>
+        <label className="field-label">
           Location
-          <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Optional" />
+          <input className="field" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Optional" />
         </label>
 
-        <label>
+        <label className="field-label">
           Notes
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Optional" />
+          <textarea className="field resize-y" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Optional" />
         </label>
 
-        <label>
+        <label className="field-label">
           Reminder
-          <select value={remind} onChange={(e) => setRemind(e.target.value)}>
+          <select className="field" value={remind} onChange={(e) => setRemind(e.target.value)}>
             {REMIND_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
         </label>
 
-        <label className="checkbox-row shared-toggle">
-          <input type="checkbox" checked={isShared} onChange={(e) => setIsShared(e.target.checked)} />
+        <label className="mt-3.5 flex items-center gap-2 rounded-sm bg-shared/15 px-3 py-2.5 font-semibold text-ink">
+          <input type="checkbox" className="h-4 w-4" checked={isShared} onChange={(e) => setIsShared(e.target.checked)} />
           Shared event (belongs to both of us)
         </label>
 
-        {error && <div className="alert error">{error}</div>}
+        {error && <div className="mt-3.5 rounded-sm bg-danger/15 px-3 py-2.5 text-sm text-danger-strong">{error}</div>}
 
-        <div className="modal-actions">
-          <button type="button" className="btn ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn primary" disabled={busy}>
+        <div className="mt-5 flex justify-end gap-2.5">
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn btn-primary" disabled={busy}>
             {busy ? 'Saving…' : editing ? 'Save changes' : 'Create event'}
           </button>
         </div>
@@ -270,8 +270,11 @@ function FormMode({ initial, session, onClose }) {
 
 function Backdrop({ children, onClose }) {
   return (
-    <div className="backdrop" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-5 backdrop-blur-sm" onClick={onClose}>
       <div onClick={(e) => e.stopPropagation()}>{children}</div>
     </div>
   )
 }
+
+const MODAL = 'relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-sm bg-surface p-7 shadow-[0_20px_60px_rgba(63,58,71,0.3)]'
+const ACCENT = { mine: 'bg-mine', partner: 'bg-partner', shared: 'bg-shared' }

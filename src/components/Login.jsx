@@ -47,16 +47,16 @@ export default function Login() {
 
   if (confirmSent) {
     return (
-      <div className="centered-screen">
-        <div className="card login-card">
-          <h1>Confirm your email</h1>
-          <p className="muted">
+      <div className="grid min-h-screen place-items-center p-6">
+        <div className="w-full max-w-md rounded-sm bg-surface p-8 shadow-[0_8px_30px_rgba(120,110,160,0.12)]">
+          <h1 className="text-2xl font-semibold">Confirm your email</h1>
+          <p className="mt-1 text-muted">
             We sent a confirmation link to <strong>{email.trim().toLowerCase()}</strong>.
             Click it to verify your account, then come back and sign in.
           </p>
           <button
             type="button"
-            className="link-btn"
+            className="mt-4 w-full text-sm text-mine-strong underline"
             onClick={() => {
               setConfirmSent(false)
               setMode('signin')
@@ -71,16 +71,20 @@ export default function Login() {
   }
 
   return (
-    <div className="centered-screen">
-      <form className="card login-card" onSubmit={handleSubmit}>
-        <h1>Our Calendar</h1>
-        <p className="muted">{mode === 'signin' ? 'Welcome back.' : 'Create your account.'}</p>
+    <div className="grid min-h-screen place-items-center p-6">
+      <form
+        className="w-full max-w-md rounded-sm bg-surface p-8 shadow-[0_8px_30px_rgba(120,110,160,0.12)]"
+        onSubmit={handleSubmit}
+      >
+        <h1 className="text-2xl font-semibold">Calendar</h1>
+        <p className="mt-1 text-muted">{mode === 'signin' ? 'Welcome back.' : 'Create your account.'}</p>
 
         {mode === 'signup' && (
-          <label>
+          <label className="field-label">
             Your name
             <input
               type="text"
+              className="field"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="e.g. Benedict"
@@ -88,44 +92,48 @@ export default function Login() {
           </label>
         )}
 
-        <label>
+        <label className="field-label">
           Email
           <input
             type="email"
             required
+            className="field"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
           />
         </label>
 
-        <label>
+        <label className="field-label">
           Password
           <input
             type="password"
             required
             minLength={8}
+            className="field"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
           />
         </label>
 
-        {error && <div className="alert error">{error}</div>}
+        {error && (
+          <div className="mt-3.5 rounded-sm bg-danger/15 px-3 py-2.5 text-sm text-danger-strong">{error}</div>
+        )}
 
-        <button className="btn primary" type="submit" disabled={busy}>
+        <button className="btn btn-primary mt-5 w-full" type="submit" disabled={busy}>
           {busy ? '…' : mode === 'signin' ? 'Sign in' : 'Sign up'}
         </button>
 
         <button
           type="button"
-          className="link-btn"
+          className="mt-4 w-full text-sm text-mine-strong underline"
           onClick={() => {
             setMode(mode === 'signin' ? 'signup' : 'signin')
             setError(null)
           }}
         >
-          {mode === 'signin' ? "Need an account? Sign up" : 'Already have an account? Sign in'}
+          {mode === 'signin' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
         </button>
       </form>
     </div>
