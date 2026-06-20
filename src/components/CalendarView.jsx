@@ -140,29 +140,29 @@ export default function CalendarView({ session }) {
   const myName = me?.display_name || session.user.email.split('@')[0]
 
   return (
-    <div className="mx-auto max-w-[1200px] p-5">
-      <header className="mb-4 flex flex-wrap items-center gap-4">
-        <div className="text-xl leading-none font-bold text-mine-strong">Calendar</div>
-        <div className="relative flex items-center gap-2">
-          <div className="flex items-center gap-0.5">
-            <button className="flex h-9 w-7 items-center justify-center rounded-sm text-mine-strong hover:bg-canvas" onClick={() => step(-1)} aria-label="Previous">
+    <div className="mx-auto max-w-[1200px] p-3 sm:p-5">
+      <header className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-4">
+        <div className="hidden text-xl leading-none font-bold text-mine-strong sm:block">Calendar</div>
+        <div className="relative flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-0.5">
+            <button className="flex h-9 w-7 shrink-0 items-center justify-center rounded-sm text-mine-strong hover:bg-canvas" onClick={() => step(-1)} aria-label="Previous">
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             </button>
             <button
               type="button"
-              className="flex h-9 items-center justify-center gap-1 rounded-sm px-2 text-lg font-semibold hover:bg-canvas"
+              className="flex h-9 min-w-0 items-center justify-center gap-1 rounded-sm px-2 text-base font-semibold hover:bg-canvas sm:text-lg"
               onClick={() => setPickerOpen((o) => !o)}
               aria-haspopup="true"
               aria-expanded={pickerOpen}
             >
-              {title(view, cursor, rangeStart, rangeEnd)}
-              <span className="text-xs text-muted">▾</span>
+              <span className="truncate">{title(view, cursor, rangeStart, rangeEnd)}</span>
+              <span className="shrink-0 text-xs text-muted">▾</span>
             </button>
-            <button className="flex h-9 w-7 items-center justify-center rounded-sm text-mine-strong hover:bg-canvas" onClick={() => step(1)} aria-label="Next">
+            <button className="flex h-9 w-7 shrink-0 items-center justify-center rounded-sm text-mine-strong hover:bg-canvas" onClick={() => step(1)} aria-label="Next">
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
             </button>
           </div>
-          <button className="btn btn-ghost px-3 py-1.5" onClick={() => setCursor(new Date())}>Today</button>
+          <button className="btn btn-ghost shrink-0 px-3 py-1.5" onClick={() => setCursor(new Date())}>Today</button>
 
           {pickerOpen && (
             <>
@@ -190,7 +190,7 @@ export default function CalendarView({ session }) {
             </>
           )}
         </div>
-        <div className="ml-auto flex flex-wrap items-center gap-3">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:gap-3">
           <div className="inline-flex gap-0.5 rounded-sm border border-line bg-surface p-0.5">
             {VIEWS.map((v) => (
               <button
@@ -218,7 +218,7 @@ export default function CalendarView({ session }) {
             ))}
           </div>
 
-          <div className="grid min-h-[calc(100dvh-150px)] grid-cols-7 gap-2 [grid-auto-rows:minmax(108px,1fr)] max-sm:gap-1 max-sm:[grid-auto-rows:minmax(84px,1fr)]">
+          <div className="grid grid-cols-7 gap-2 [grid-auto-rows:minmax(76px,1fr)] sm:min-h-[calc(100dvh-150px)] sm:[grid-auto-rows:minmax(108px,1fr)] max-sm:gap-1">
             {days.map((day) => {
               const key = format(day, 'yyyy-MM-dd')
               const dayEvents = eventsByDay[key] || []
@@ -227,7 +227,7 @@ export default function CalendarView({ session }) {
               return (
                 <div
                   key={key}
-                  className={`flex cursor-pointer flex-col gap-1 overflow-hidden rounded-sm border p-2 hover:border-mine ${
+                  className={`flex cursor-pointer flex-col gap-1 overflow-hidden rounded-sm border p-1 hover:border-mine sm:p-2 ${
                     today ? 'border-mine' : 'border-transparent'
                   } ${outside ? 'bg-surface/50' : 'bg-surface'}`}
                   onClick={() => setModal({ mode: 'create', date: day })}
@@ -255,7 +255,7 @@ export default function CalendarView({ session }) {
                         }}
                         title={`${ev.title} — ${ownerLabel(ev)}`}
                       >
-                        <span className="shrink-0 font-semibold opacity-90">
+                        <span className="hidden shrink-0 font-semibold opacity-90 sm:inline">
                           {ev.all_day ? ownerLabel(ev) : `${format(parseISO(ev.start_at), 'HH:mm')} · ${ownerLabel(ev)}`}
                         </span>
                         <span className="overflow-hidden text-ellipsis">{ev.title}</span>

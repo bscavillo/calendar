@@ -47,8 +47,8 @@ export default function Login() {
 
   if (confirmSent) {
     return (
-      <div className="grid min-h-screen place-items-center p-6">
-        <div className="w-full max-w-md rounded-sm bg-surface p-8 shadow-[0_8px_30px_rgba(120,110,160,0.12)]">
+      <div className="grid min-h-screen place-items-center p-4 sm:p-6">
+        <div className="w-full max-w-md rounded-sm bg-surface p-6 shadow-[0_8px_30px_rgba(120,110,160,0.12)] sm:p-8">
           <h1 className="text-2xl font-semibold">Confirm your email</h1>
           <p className="mt-1 text-muted">
             We sent a confirmation link to <strong>{email.trim().toLowerCase()}</strong>.
@@ -71,9 +71,9 @@ export default function Login() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center p-6">
+    <div className="grid min-h-screen place-items-center p-4 sm:p-6">
       <form
-        className="w-full max-w-md rounded-sm bg-surface p-8 shadow-[0_8px_30px_rgba(120,110,160,0.12)]"
+        className="w-full max-w-md rounded-sm bg-surface p-6 shadow-[0_8px_30px_rgba(120,110,160,0.12)] sm:p-8"
         onSubmit={handleSubmit}
       >
         <h1 className="text-2xl font-semibold">Calendar</h1>

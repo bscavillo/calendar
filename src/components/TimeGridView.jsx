@@ -1,36 +1,28 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { format, isToday, parseISO } from 'date-fns'
 
 const HOUR_HEIGHT = 48 // px per hour
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
 // A scrollable hour-by-hour grid used by both the week view (7 day columns)
-// and the day view (1 column). Timed events are positioned by their start/end;
-// all-day events sit in a row at the top of the scroller (scrolling with it).
+// and the day view (1 column). Everything lives in one scroll container: the
+// day-name header sticks to the top, the time gutter sticks to the left, and on
+// narrow screens the week's columns keep a minimum width so the grid scrolls
+// horizontally instead of squashing.
 export default function TimeGridView({ days, events, userId, profiles, onSelectEvent, onSelectSlot }) {
   const scrollRef = useRef(null)
+  const headRef = useRef(null)
   const hourGridRef = useRef(null)
-  const [gutter, setGutter] = useState(0)
 
   // Start scrolled to ~7am so the morning is visible without scrolling up. The
-  // all-day row lives above the hour grid in the same scroller, so offset the
-  // target by the grid's own top position.
+  // header and all-day row sit above the hour grid in the same scroller, so the
+  // target is offset past them and back up by the sticky header's height.
   useEffect(() => {
     const body = scrollRef.current
     const grid = hourGridRef.current
-    if (body && grid) body.scrollTop = grid.offsetTop + 7 * HOUR_HEIGHT
-  }, [days.length])
-
-  // The scrolling body loses its right edge to a scrollbar; the day-name header
-  // doesn't scroll, so we pad it by the measured scrollbar width to keep every
-  // day column aligned with the grid below.
-  useLayoutEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const measure = () => setGutter(el.offsetWidth - el.clientWidth)
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
+    if (!body || !grid) return
+    const headH = headRef.current ? headRef.current.offsetHeight : 0
+    body.scrollTop = Math.max(grid.offsetTop - headH + 7 * HOUR_HEIGHT, 0)
   }, [days.length])
 
   // Each event carries its own chosen color; default to pastel purple.
@@ -68,15 +60,20 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
     })
   }, [days, events])
 
-  const gridCols = { gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }
-  // Header and all-day rows reserve the scrollbar's width on the right so their
-  // columns line up with the scrolling body below.
-  const headCols = { ...gridCols, paddingRight: gutter }
+  // Day columns keep a minimum width in week view so they scroll horizontally on
+  // narrow screens rather than squashing; the single day view just fills.
+  const minCol = days.length === 1 ? '0' : '6rem'
+  const gridCols = { gridTemplateColumns: `48px repeat(${days.length}, minmax(${minCol}, 1fr))` }
 
   return (
-    <div className="overflow-hidden rounded-sm bg-surface shadow-[0_8px_30px_rgba(120,110,160,0.12)]">
-      <div className="grid border-b border-line" style={headCols}>
-        <div />
+    <div
+      ref={scrollRef}
+      className="relative max-h-[70dvh] overflow-auto rounded-sm bg-surface shadow-[0_8px_30px_rgba(120,110,160,0.12)] sm:max-h-[calc(100dvh-190px)]"
+    >
+      {/* Day-name header: sticks to the top on vertical scroll, moves with the
+          grid on horizontal scroll. */}
+      <div ref={headRef} className="sticky top-0 z-20 grid border-b border-line bg-surface" style={gridCols}>
+        <div className="sticky left-0 z-30 bg-surface" />
         {perDay.map(({ day }) => (
           <div key={day.toISOString()} className="flex flex-col gap-0.5 border-l border-line px-1 py-2 text-center">
             <span className="text-xs font-bold tracking-wide text-muted uppercase">{format(day, 'EEE')}</span>
@@ -91,71 +88,69 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
         ))}
       </div>
 
-      <div className="relative max-h-[calc(100dvh-200px)] overflow-y-auto" ref={scrollRef}>
-        {/* All-day row — a normal row at the top that scrolls with the grid. */}
-        <div className="grid border-b border-line" style={gridCols}>
-          <div className="flex items-start justify-end pt-1.5 pr-1.5 text-[0.66rem] font-bold tracking-wide text-muted uppercase">all-day</div>
-          {perDay.map(({ day, allDay }) => (
-            <div key={day.toISOString()} className="flex min-h-[34px] flex-col gap-0.5 border-l border-line p-1">
-              {allDay.map((ev) => (
-                <button
-                  key={ev.id}
-                  className="chip"
-                  style={{ background: eventColor(ev) }}
-                  onClick={() => onSelectEvent(ev)}
-                  title={`${ev.title} — ${ownerLabel(ev)}`}
-                >
-                  <span className="shrink-0 font-semibold opacity-90">{ownerLabel(ev)}</span>
-                  <span className="overflow-hidden text-ellipsis">{ev.title}</span>
-                </button>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        {/* Hour grid. */}
-        <div className="grid" style={gridCols} ref={hourGridRef}>
-          <div className="relative">
-            {HOURS.map((h) => (
-              <div key={h} className="-translate-y-[7px] pr-1.5 text-right text-[0.7rem] text-muted" style={{ height: HOUR_HEIGHT }}>
-                {h === 0 ? '' : format(new Date(2000, 0, 1, h), 'HH:mm')}
-              </div>
+      {/* All-day row — a normal row that scrolls with the grid. */}
+      <div className="grid border-b border-line" style={gridCols}>
+        <div className="sticky left-0 z-10 flex items-start justify-end bg-surface pt-1.5 pr-1.5 text-[0.66rem] font-bold tracking-wide text-muted uppercase">all-day</div>
+        {perDay.map(({ day, allDay }) => (
+          <div key={day.toISOString()} className="flex min-h-[34px] flex-col gap-0.5 border-l border-line p-1">
+            {allDay.map((ev) => (
+              <button
+                key={ev.id}
+                className="chip"
+                style={{ background: eventColor(ev) }}
+                onClick={() => onSelectEvent(ev)}
+                title={`${ev.title} — ${ownerLabel(ev)}`}
+              >
+                <span className="shrink-0 font-semibold opacity-90">{ownerLabel(ev)}</span>
+                <span className="overflow-hidden text-ellipsis">{ev.title}</span>
+              </button>
             ))}
           </div>
-          {perDay.map(({ day, timed }) => (
-            <div
-              key={day.toISOString()}
-              className="relative border-l border-line"
-              style={{ height: HOUR_HEIGHT * 24 }}
-              onClick={(e) => handleColumnClick(e, day, onSelectSlot)}
-            >
-              {HOURS.map((h) => (
-                <div key={h} className="pointer-events-none absolute right-0 left-0 border-t border-line" style={{ top: h * HOUR_HEIGHT }} />
-              ))}
-              {timed.map(({ ev, top, height, lane, lanes }) => (
-                <button
-                  key={ev.id}
-                  className="absolute flex flex-col overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-[0.72rem] leading-tight text-white shadow-sm hover:z-[5] hover:brightness-105"
-                  style={{
-                    top: (top / 60) * HOUR_HEIGHT,
-                    height: (height / 60) * HOUR_HEIGHT - 2,
-                    left: `calc(${(lane / lanes) * 100}% + 2px)`,
-                    width: `calc(${100 / lanes}% - 4px)`,
-                    background: eventColor(ev),
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onSelectEvent(ev)
-                  }}
-                  title={`${ev.title} — ${ownerLabel(ev)}`}
-                >
-                  <span className="font-bold opacity-90">{format(parseISO(ev.start_at), 'HH:mm')} · {ownerLabel(ev)}</span>
-                  <span className="overflow-hidden text-ellipsis whitespace-nowrap">{ev.title}</span>
-                </button>
-              ))}
+        ))}
+      </div>
+
+      {/* Hour grid. */}
+      <div className="grid" style={gridCols} ref={hourGridRef}>
+        <div className="sticky left-0 z-10 bg-surface">
+          {HOURS.map((h) => (
+            <div key={h} className="-translate-y-[7px] pr-1.5 text-right text-[0.7rem] text-muted" style={{ height: HOUR_HEIGHT }}>
+              {h === 0 ? '' : format(new Date(2000, 0, 1, h), 'HH:mm')}
             </div>
           ))}
         </div>
+        {perDay.map(({ day, timed }) => (
+          <div
+            key={day.toISOString()}
+            className="relative border-l border-line"
+            style={{ height: HOUR_HEIGHT * 24 }}
+            onClick={(e) => handleColumnClick(e, day, onSelectSlot)}
+          >
+            {HOURS.map((h) => (
+              <div key={h} className="pointer-events-none absolute right-0 left-0 border-t border-line" style={{ top: h * HOUR_HEIGHT }} />
+            ))}
+            {timed.map(({ ev, top, height, lane, lanes }) => (
+              <button
+                key={ev.id}
+                className="absolute flex flex-col overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-[0.72rem] leading-tight text-white shadow-sm hover:z-[5] hover:brightness-105"
+                style={{
+                  top: (top / 60) * HOUR_HEIGHT,
+                  height: (height / 60) * HOUR_HEIGHT - 2,
+                  left: `calc(${(lane / lanes) * 100}% + 2px)`,
+                  width: `calc(${100 / lanes}% - 4px)`,
+                  background: eventColor(ev),
+                }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSelectEvent(ev)
+                }}
+                title={`${ev.title} — ${ownerLabel(ev)}`}
+              >
+                <span className="font-bold opacity-90">{format(parseISO(ev.start_at), 'HH:mm')} · {ownerLabel(ev)}</span>
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap">{ev.title}</span>
+              </button>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   )
