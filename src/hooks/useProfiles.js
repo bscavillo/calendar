@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 // Loads every profile (there are only two of you) keyed by user id, and keeps
-// them live so a name or color change shows up for both partners instantly.
+// them live so a name change shows up for both partners instantly.
 export function useProfiles() {
   const [profiles, setProfiles] = useState({})
   const [loading, setLoading] = useState(true)
@@ -10,7 +10,7 @@ export function useProfiles() {
   const fetchProfiles = useCallback(async () => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, display_name, color, timezone')
+      .select('id, display_name, timezone')
     if (data) {
       const map = {}
       for (const p of data) map[p.id] = p

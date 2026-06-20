@@ -114,12 +114,9 @@ export default function CalendarView({ session }) {
     return map
   }, [days, events])
 
-  // Each event carries its own chosen color. Older events without one fall back
-  // to a shared-pink / owner-color default.
+  // Each event carries its own chosen color; default to pastel purple.
   function eventColor(ev) {
-    if (ev.color) return ev.color
-    if (ev.is_shared) return '#e7a8cd'
-    return profiles[ev.owner_id]?.color || (ev.owner_id === userId ? '#a99ce6' : '#9fbef0')
+    return ev.color || '#a99ce6'
   }
 
   // Whose event it is, shown inline on each chip (replaces the color legend).
