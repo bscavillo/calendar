@@ -3,7 +3,6 @@ import { format, parseISO, addHours, setHours } from 'date-fns'
 import { supabase } from '../lib/supabaseClient'
 import {
   browserTimeZone,
-  zoneAbbrev,
   formatTimeInZone,
   formatDateInZone,
   zoneCity,
@@ -73,7 +72,7 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
   return (
     <Backdrop onClose={onClose}>
       <div className={MODAL}>
-        <div className={`mb-3.5 h-1.5 w-[60px] rounded-sm ${ACCENT[event.is_shared ? 'shared' : isOwner ? 'mine' : 'partner']}`} />
+        <div className="mb-3.5 h-1.5 w-[60px] rounded-sm" style={{ background: event.color || '#a99ce6' }} />
         <h2 className="text-xl font-semibold">{event.title}</h2>
         <p className="mt-1 text-muted">
           {event.is_shared ? 'Shared' : ownerName}
@@ -89,9 +88,6 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     {formatDateInZone(start, myTz)} ·{' '}
                     {formatTimeInZone(start, myTz)} – {formatTimeInZone(end, myTz)}
-                    <span className="text-[0.72rem] font-bold tracking-wide text-muted uppercase">
-                      {zoneAbbrev(myTz, start)} · your time
-                    </span>
                   </div>
                   {showPartnerTime && (
                     <div className="mt-1 flex flex-wrap items-baseline gap-1.5 text-muted">
@@ -99,7 +95,6 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
                       {formatTimeInZone(start, partnerTz)} –{' '}
                       {formatTimeInZone(end, partnerTz)}
                       <span className="text-[0.72rem] font-bold tracking-wide text-muted uppercase">
-                        {zoneAbbrev(partnerTz, start)} ·{' '}
                         {partner.display_name || zoneCity(partnerTz)}&rsquo;s time
                       </span>
                     </div>
@@ -299,4 +294,3 @@ function Backdrop({ children, onClose }) {
 }
 
 const MODAL = 'relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-sm bg-surface p-7 shadow-[0_20px_60px_rgba(63,58,71,0.3)]'
-const ACCENT = { mine: 'bg-mine', partner: 'bg-partner', shared: 'bg-shared' }
