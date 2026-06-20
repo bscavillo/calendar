@@ -296,6 +296,10 @@ textarea { resize: vertical; }
 .timegrid .tg-allday {
   display: grid;
   grid-template-columns: 56px repeat(var(--tg-cols), 1fr);
+  /* Reserve the same scrollbar space as the scrolling body so the day
+     columns line up with the header and all-day strip. */
+  overflow: hidden;
+  scrollbar-gutter: stable;
 }
 .week-view { --tg-cols: 7; }
 .day-view { --tg-cols: 1; }
@@ -340,6 +344,7 @@ textarea { resize: vertical; }
   grid-template-columns: 56px repeat(var(--tg-cols), 1fr);
   max-height: 64vh;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   position: relative;
 }
 .tg-gutter { position: relative; }
