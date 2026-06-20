@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { format, isToday, parseISO } from 'date-fns'
 
 const HOUR_HEIGHT = 48 // px per hour
@@ -9,14 +9,34 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i)
 // all-day events sit in a strip above the grid.
 export default function TimeGridView({ days, events, userId, profiles, onSelectEvent, onSelectSlot }) {
   const scrollRef = useRef(null)
+  const [gutter, setGutter] = useState(0)
 
   // Start scrolled to ~7am so the morning is visible without scrolling up.
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 7 * HOUR_HEIGHT
   }, [])
 
+  // The scrolling body loses its right edge to a scrollbar; the header and
+  // all-day rows don't scroll, so we pad them by the measured scrollbar width
+  // to keep every day column aligned across all three rows.
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const measure = () => setGutter(el.offsetWidth - el.clientWidth)
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [days.length])
+
   function ownerColor(ev) {
     return profiles[ev.owner_id]?.color || (ev.owner_id === userId ? '#a99ce6' : '#9fbef0')
+  }
+
+  // Whose event it is, shown inline on each event (replaces the color legend).
+  function ownerLabel(ev) {
+    if (ev.is_shared) return 'Shared'
+    if (ev.owner_id === userId) return profiles[userId]?.display_name || 'You'
+    return profiles[ev.owner_id]?.display_name || 'Partner'
   }
 
   // Split events per day into all-day vs timed, with timed laid out in columns.
@@ -42,17 +62,14 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
     })
   }, [days, events])
 
-  // Shared by all three rows. `scrollbarGutter: stable` reserves the scrollbar
-  // space in every row — not just the scrolling body — so the day columns in the
-  // header, all-day strip and grid stay aligned.
-  const gridCols = {
-    gridTemplateColumns: `56px repeat(${days.length}, 1fr)`,
-    scrollbarGutter: 'stable',
-  }
+  const gridCols = { gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }
+  // Header and all-day rows reserve the scrollbar's width on the right so their
+  // columns line up with the scrolling body below.
+  const headCols = { ...gridCols, paddingRight: gutter }
 
   return (
     <div className="overflow-hidden rounded-sm bg-surface shadow-[0_8px_30px_rgba(120,110,160,0.12)]">
-      <div className="grid overflow-hidden border-b border-line" style={gridCols}>
+      <div className="grid border-b border-line" style={headCols}>
         <div />
         {perDay.map(({ day }) => (
           <div key={day.toISOString()} className="flex flex-col gap-0.5 border-l border-line px-1 py-2 text-center">
@@ -68,7 +85,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
         ))}
       </div>
 
-      <div className="grid min-h-[34px] border-b border-line" style={gridCols}>
+      <div className="grid min-h-[34px] border-b border-line" style={headCols}>
         <div className="flex items-center justify-end pr-1.5 text-[0.66rem] font-bold tracking-wide text-muted uppercase">all-day</div>
         {perDay.map(({ day, allDay }) => (
           <div key={day.toISOString()} className="flex flex-col gap-0.5 border-l border-line p-1">
@@ -78,8 +95,9 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
                 className={`chip ${ev.is_shared ? 'bg-shared' : ''}`}
                 style={ev.is_shared ? undefined : { background: ownerColor(ev) }}
                 onClick={() => onSelectEvent(ev)}
-                title={ev.title}
+                title={`${ev.title} — ${ownerLabel(ev)}`}
               >
+                <span className="shrink-0 font-semibold opacity-90">{ownerLabel(ev)}</span>
                 <span className="overflow-hidden text-ellipsis">{ev.title}</span>
               </button>
             ))}
@@ -87,7 +105,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
         ))}
       </div>
 
-      <div className="relative grid max-h-[64vh] overflow-y-auto" style={gridCols} ref={scrollRef}>
+      <div className="relative grid max-h-[calc(100dvh-200px)] overflow-y-auto" style={gridCols} ref={scrollRef}>
         <div className="relative">
           {HOURS.map((h) => (
             <div key={h} className="-translate-y-[7px] pr-1.5 text-right text-[0.7rem] text-muted" style={{ height: HOUR_HEIGHT }}>
@@ -122,9 +140,9 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
                   e.stopPropagation()
                   onSelectEvent(ev)
                 }}
-                title={ev.title}
+                title={`${ev.title} — ${ownerLabel(ev)}`}
               >
-                <span className="font-bold opacity-90">{format(parseISO(ev.start_at), 'HH:mm')}</span>
+                <span className="font-bold opacity-90">{format(parseISO(ev.start_at), 'HH:mm')} · {ownerLabel(ev)}</span>
                 <span className="overflow-hidden text-ellipsis whitespace-nowrap">{ev.title}</span>
               </button>
             ))}

@@ -13,6 +13,10 @@ import {
   subWeeks,
   addDays,
   subDays,
+  setMonth,
+  setYear,
+  getMonth,
+  getYear,
   isSameMonth,
   isSameYear,
   format,
@@ -30,6 +34,13 @@ import TimeGridView from './TimeGridView'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const VIEWS = ['month', 'week', 'day']
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+// A range of years to jump between via the dropdown, centered on the present.
+const THIS_YEAR = new Date().getFullYear()
+const YEARS = Array.from({ length: 11 }, (_, i) => THIS_YEAR - 4 + i)
 
 export default function CalendarView({ session }) {
   const userId = session.user.id
@@ -38,6 +49,7 @@ export default function CalendarView({ session }) {
   const { profiles } = useProfiles()
   const [modal, setModal] = useState(null) // { mode, event?, date? } or null
   const [showSettings, setShowSettings] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   // The visible date range depends on the view. Month spans full weeks so the
   // grid is always rectangular; week is Mon–Sun; day is a single date.
@@ -108,6 +120,13 @@ export default function CalendarView({ session }) {
     return profiles[ev.owner_id]?.color || (ev.owner_id === userId ? '#a99ce6' : '#9fbef0')
   }
 
+  // Whose event it is, shown inline on each chip (replaces the color legend).
+  function ownerLabel(ev) {
+    if (ev.is_shared) return 'Shared'
+    if (ev.owner_id === userId) return myName
+    return profiles[ev.owner_id]?.display_name || 'Partner'
+  }
+
   function step(dir) {
     if (view === 'month') setCursor((c) => (dir > 0 ? addMonths(c, 1) : subMonths(c, 1)))
     else if (view === 'week') setCursor((c) => (dir > 0 ? addWeeks(c, 1) : subWeeks(c, 1)))
@@ -120,18 +139,51 @@ export default function CalendarView({ session }) {
 
   const me = profiles[userId]
   const myName = me?.display_name || session.user.email.split('@')[0]
-  const myColor = me?.color || '#a99ce6'
-  const partner = Object.values(profiles).find((p) => p.id !== userId)
 
   return (
     <div className="mx-auto max-w-[1200px] p-5">
       <header className="mb-4 flex flex-wrap items-center gap-4">
-        <div className="text-xl font-bold text-mine-strong">Calendar</div>
-        <div className="flex items-center gap-1.5">
-          <button className="rounded-sm px-2 text-2xl leading-none text-mine-strong hover:bg-canvas" onClick={() => step(-1)} aria-label="Previous">‹</button>
-          <h2 className="min-w-[170px] text-center text-lg font-semibold">{title(view, cursor, rangeStart, rangeEnd)}</h2>
-          <button className="rounded-sm px-2 text-2xl leading-none text-mine-strong hover:bg-canvas" onClick={() => step(1)} aria-label="Next">›</button>
+        <div className="text-xl leading-none font-bold text-mine-strong">Calendar</div>
+        <div className="relative flex items-center gap-1.5">
+          <button className="flex h-9 w-9 items-center justify-center rounded-sm text-2xl leading-none text-mine-strong hover:bg-canvas" onClick={() => step(-1)} aria-label="Previous">‹</button>
+          <button
+            type="button"
+            className="flex h-9 min-w-[170px] items-center justify-center gap-1 rounded-sm px-2 text-lg font-semibold hover:bg-canvas"
+            onClick={() => setPickerOpen((o) => !o)}
+            aria-haspopup="true"
+            aria-expanded={pickerOpen}
+          >
+            {title(view, cursor, rangeStart, rangeEnd)}
+            <span className="text-xs text-muted">▾</span>
+          </button>
+          <button className="flex h-9 w-9 items-center justify-center rounded-sm text-2xl leading-none text-mine-strong hover:bg-canvas" onClick={() => step(1)} aria-label="Next">›</button>
           <button className="btn btn-ghost ml-2 px-3 py-1.5" onClick={() => setCursor(new Date())}>Today</button>
+
+          {pickerOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setPickerOpen(false)} />
+              <div className="absolute top-full left-0 z-20 mt-1 flex gap-2 rounded-sm border border-line bg-surface p-2 shadow-[0_8px_30px_rgba(120,110,160,0.18)]">
+                <select
+                  className="rounded-sm border border-line bg-white px-2 py-1.5 text-sm text-ink focus:border-mine focus:outline-none"
+                  value={getMonth(cursor)}
+                  onChange={(e) => setCursor(setMonth(cursor, Number(e.target.value)))}
+                >
+                  {MONTHS.map((m, i) => (
+                    <option key={m} value={i}>{m}</option>
+                  ))}
+                </select>
+                <select
+                  className="rounded-sm border border-line bg-white px-2 py-1.5 text-sm text-ink focus:border-mine focus:outline-none"
+                  value={getYear(cursor)}
+                  onChange={(e) => setCursor(setYear(cursor, Number(e.target.value)))}
+                >
+                  {YEARS.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-3">
           <div className="inline-flex gap-0.5 rounded-sm border border-line bg-surface p-0.5">
@@ -147,15 +199,6 @@ export default function CalendarView({ session }) {
               </button>
             ))}
           </div>
-          <span className="flex items-center gap-1.5 text-xs text-muted">
-            <span className="ml-2 inline-block h-3 w-3 rounded-sm" style={{ background: myColor }} /> {myName}
-            {partner && (
-              <>
-                <span className="ml-2 inline-block h-3 w-3 rounded-sm" style={{ background: partner.color }} /> {partner.display_name}
-              </>
-            )}
-            <span className="ml-2 inline-block h-3 w-3 rounded-sm bg-shared" /> Shared
-          </span>
           <button className="btn btn-primary" onClick={() => setModal({ mode: 'create', date: new Date() })}>+ New event</button>
           <button className="btn btn-ghost" onClick={() => setShowSettings(true)}>Settings</button>
           <button className="btn btn-ghost" onClick={signOut}>Sign out</button>
@@ -170,7 +213,7 @@ export default function CalendarView({ session }) {
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-2 [grid-auto-rows:minmax(108px,1fr)] max-sm:gap-1 max-sm:[grid-auto-rows:minmax(84px,1fr)]">
+          <div className="grid min-h-[calc(100dvh-150px)] grid-cols-7 gap-2 [grid-auto-rows:minmax(108px,1fr)] max-sm:gap-1 max-sm:[grid-auto-rows:minmax(84px,1fr)]">
             {days.map((day) => {
               const key = format(day, 'yyyy-MM-dd')
               const dayEvents = eventsByDay[key] || []
@@ -205,11 +248,11 @@ export default function CalendarView({ session }) {
                           e.stopPropagation()
                           setModal({ mode: 'view', event: ev })
                         }}
-                        title={ev.title}
+                        title={`${ev.title} — ${ownerLabel(ev)}`}
                       >
-                        {!ev.all_day && (
-                          <span className="font-bold opacity-90">{format(parseISO(ev.start_at), 'HH:mm')}</span>
-                        )}
+                        <span className="shrink-0 font-semibold opacity-90">
+                          {ev.all_day ? ownerLabel(ev) : `${format(parseISO(ev.start_at), 'HH:mm')} · ${ownerLabel(ev)}`}
+                        </span>
                         <span className="overflow-hidden text-ellipsis">{ev.title}</span>
                       </button>
                     ))}
