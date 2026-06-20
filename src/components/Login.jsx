@@ -77,7 +77,7 @@ export default function Login() {
         onSubmit={handleSubmit}
       >
         <h1 className="text-2xl font-semibold">Calendar</h1>
-        <p className="mt-1 text-muted">{mode === 'signin' ? 'Haiiii' : 'Create your account.'}</p>
+        <p className="mt-1 text-muted">{mode === 'signin' ? 'Haiiii' : 'Hello! Please create your account.'}</p>
 
         {mode === 'signup' && (
           <label className="field-label">

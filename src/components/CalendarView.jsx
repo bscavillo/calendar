@@ -145,7 +145,9 @@ export default function CalendarView({ session }) {
         <div className="text-xl leading-none font-bold text-mine-strong">Calendar</div>
         <div className="relative flex items-center gap-2">
           <div className="flex items-center gap-0.5">
-            <button className="flex h-9 w-7 items-center justify-center rounded-sm text-2xl leading-none text-mine-strong hover:bg-canvas" onClick={() => step(-1)} aria-label="Previous">‹</button>
+            <button className="flex h-9 w-7 items-center justify-center rounded-sm text-mine-strong hover:bg-canvas" onClick={() => step(-1)} aria-label="Previous">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+            </button>
             <button
               type="button"
               className="flex h-9 items-center justify-center gap-1 rounded-sm px-2 text-lg font-semibold hover:bg-canvas"
@@ -156,7 +158,9 @@ export default function CalendarView({ session }) {
               {title(view, cursor, rangeStart, rangeEnd)}
               <span className="text-xs text-muted">▾</span>
             </button>
-            <button className="flex h-9 w-7 items-center justify-center rounded-sm text-2xl leading-none text-mine-strong hover:bg-canvas" onClick={() => step(1)} aria-label="Next">›</button>
+            <button className="flex h-9 w-7 items-center justify-center rounded-sm text-mine-strong hover:bg-canvas" onClick={() => step(1)} aria-label="Next">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+            </button>
           </div>
           <button className="btn btn-ghost px-3 py-1.5" onClick={() => setCursor(new Date())}>Today</button>
 
