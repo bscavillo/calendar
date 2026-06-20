@@ -89,7 +89,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
 
       {/* All-day row — a normal row that scrolls with the grid. */}
       <div className="grid border-b border-line" style={gridCols}>
-        <div className="sticky left-0 z-10 bg-surface pt-1.5 pr-1.5 text-right text-[0.7rem] whitespace-nowrap text-muted">All-day</div>
+        <div className="sticky left-0 z-10 bg-surface pt-1.5 pr-1.5 text-right text-xs whitespace-nowrap text-muted">All-day</div>
         {perDay.map(({ day, allDay }) => (
           <div key={day.toISOString()} className="flex min-h-[34px] flex-col gap-0.5 border-l border-line p-1">
             {allDay.map((ev) => (
