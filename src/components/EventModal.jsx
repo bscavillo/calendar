@@ -9,6 +9,12 @@ import {
   zoneCity,
 } from '../lib/time'
 
+// Pastel palette an event's color can be picked from.
+const PALETTE = [
+  '#a99ce6', '#9fbef0', '#e7a8cd', '#c2a892',
+  '#9fd6c2', '#d6b3e6', '#e6c79f', '#a9c9e6',
+]
+
 const REMIND_OPTIONS = [
   { value: '', label: 'No reminder' },
   { value: '0', label: 'At start time' },
@@ -146,6 +152,7 @@ function FormMode({ initial, session, onClose }) {
     editing ? format(parseISO(ev.end_at), 'HH:mm') : format(times.end, 'HH:mm')
   )
   const [isShared, setIsShared] = useState(editing ? ev.is_shared : false)
+  const [color, setColor] = useState(editing ? ev.color || PALETTE[0] : PALETTE[0])
   const [remind, setRemind] = useState(editing && ev.remind_minutes != null ? String(ev.remind_minutes) : '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -179,6 +186,7 @@ function FormMode({ initial, session, onClose }) {
         end_at,
         all_day: allDay,
         is_shared: isShared,
+        color,
         remind_minutes: remind === '' ? null : Number(remind),
       }
       if (editing) {
@@ -249,6 +257,20 @@ function FormMode({ initial, session, onClose }) {
             ))}
           </select>
         </label>
+
+        <label className="field-label">Color</label>
+        <div className="mt-2 flex flex-wrap gap-2.5">
+          {PALETTE.map((c) => (
+            <button
+              type="button"
+              key={c}
+              className={`h-8 w-8 rounded-sm p-0 ${c === color ? 'ring-2 ring-ink' : 'ring-1 ring-line'}`}
+              style={{ background: c }}
+              onClick={() => setColor(c)}
+              aria-label={`Choose color ${c}`}
+            />
+          ))}
+        </div>
 
         <label className="mt-3.5 flex items-center gap-2 rounded-sm bg-shared/15 px-3 py-2.5 font-semibold text-ink">
           <input type="checkbox" className="h-4 w-4" checked={isShared} onChange={(e) => setIsShared(e.target.checked)} />

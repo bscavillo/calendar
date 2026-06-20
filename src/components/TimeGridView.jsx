@@ -6,19 +6,24 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
 // A scrollable hour-by-hour grid used by both the week view (7 day columns)
 // and the day view (1 column). Timed events are positioned by their start/end;
-// all-day events sit in a strip above the grid.
+// all-day events sit in a row at the top of the scroller (scrolling with it).
 export default function TimeGridView({ days, events, userId, profiles, onSelectEvent, onSelectSlot }) {
   const scrollRef = useRef(null)
+  const hourGridRef = useRef(null)
   const [gutter, setGutter] = useState(0)
 
-  // Start scrolled to ~7am so the morning is visible without scrolling up.
+  // Start scrolled to ~7am so the morning is visible without scrolling up. The
+  // all-day row lives above the hour grid in the same scroller, so offset the
+  // target by the grid's own top position.
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 7 * HOUR_HEIGHT
-  }, [])
+    const body = scrollRef.current
+    const grid = hourGridRef.current
+    if (body && grid) body.scrollTop = grid.offsetTop + 7 * HOUR_HEIGHT
+  }, [days.length])
 
-  // The scrolling body loses its right edge to a scrollbar; the header and
-  // all-day rows don't scroll, so we pad them by the measured scrollbar width
-  // to keep every day column aligned across all three rows.
+  // The scrolling body loses its right edge to a scrollbar; the day-name header
+  // doesn't scroll, so we pad it by the measured scrollbar width to keep every
+  // day column aligned with the grid below.
   useLayoutEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -28,7 +33,11 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
     return () => window.removeEventListener('resize', measure)
   }, [days.length])
 
-  function ownerColor(ev) {
+  // Each event carries its own chosen color. Older events without one fall back
+  // to a shared-pink / owner-color default.
+  function eventColor(ev) {
+    if (ev.color) return ev.color
+    if (ev.is_shared) return '#e7a8cd'
     return profiles[ev.owner_id]?.color || (ev.owner_id === userId ? '#a99ce6' : '#9fbef0')
   }
 
@@ -85,69 +94,71 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
         ))}
       </div>
 
-      <div className="grid min-h-[34px] border-b border-line" style={headCols}>
-        <div className="flex items-center justify-end pr-1.5 text-[0.66rem] font-bold tracking-wide text-muted uppercase">all-day</div>
-        {perDay.map(({ day, allDay }) => (
-          <div key={day.toISOString()} className="flex flex-col gap-0.5 border-l border-line p-1">
-            {allDay.map((ev) => (
-              <button
-                key={ev.id}
-                className={`chip ${ev.is_shared ? 'bg-shared' : ''}`}
-                style={ev.is_shared ? undefined : { background: ownerColor(ev) }}
-                onClick={() => onSelectEvent(ev)}
-                title={`${ev.title} — ${ownerLabel(ev)}`}
-              >
-                <span className="shrink-0 font-semibold opacity-90">{ownerLabel(ev)}</span>
-                <span className="overflow-hidden text-ellipsis">{ev.title}</span>
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      <div className="relative grid max-h-[calc(100dvh-200px)] overflow-y-auto" style={gridCols} ref={scrollRef}>
-        <div className="relative">
-          {HOURS.map((h) => (
-            <div key={h} className="-translate-y-[7px] pr-1.5 text-right text-[0.7rem] text-muted" style={{ height: HOUR_HEIGHT }}>
-              {h === 0 ? '' : format(new Date(2000, 0, 1, h), 'HH:mm')}
+      <div className="relative max-h-[calc(100dvh-200px)] overflow-y-auto" ref={scrollRef}>
+        {/* All-day row — a normal row at the top that scrolls with the grid. */}
+        <div className="grid border-b border-line" style={gridCols}>
+          <div className="flex items-start justify-end pt-1.5 pr-1.5 text-[0.66rem] font-bold tracking-wide text-muted uppercase">all-day</div>
+          {perDay.map(({ day, allDay }) => (
+            <div key={day.toISOString()} className="flex min-h-[34px] flex-col gap-0.5 border-l border-line p-1">
+              {allDay.map((ev) => (
+                <button
+                  key={ev.id}
+                  className="chip"
+                  style={{ background: eventColor(ev) }}
+                  onClick={() => onSelectEvent(ev)}
+                  title={`${ev.title} — ${ownerLabel(ev)}`}
+                >
+                  <span className="shrink-0 font-semibold opacity-90">{ownerLabel(ev)}</span>
+                  <span className="overflow-hidden text-ellipsis">{ev.title}</span>
+                </button>
+              ))}
             </div>
           ))}
         </div>
-        {perDay.map(({ day, timed }) => (
-          <div
-            key={day.toISOString()}
-            className="relative border-l border-line"
-            style={{ height: HOUR_HEIGHT * 24 }}
-            onClick={(e) => handleColumnClick(e, day, onSelectSlot)}
-          >
+
+        {/* Hour grid. */}
+        <div className="grid" style={gridCols} ref={hourGridRef}>
+          <div className="relative">
             {HOURS.map((h) => (
-              <div key={h} className="pointer-events-none absolute right-0 left-0 border-t border-line" style={{ top: h * HOUR_HEIGHT }} />
-            ))}
-            {timed.map(({ ev, top, height, lane, lanes }) => (
-              <button
-                key={ev.id}
-                className={`absolute flex flex-col overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-[0.72rem] leading-tight text-white shadow-sm hover:z-[5] hover:brightness-105 ${
-                  ev.is_shared ? 'bg-shared' : ''
-                }`}
-                style={{
-                  top: (top / 60) * HOUR_HEIGHT,
-                  height: (height / 60) * HOUR_HEIGHT - 2,
-                  left: `calc(${(lane / lanes) * 100}% + 2px)`,
-                  width: `calc(${100 / lanes}% - 4px)`,
-                  ...(ev.is_shared ? {} : { background: ownerColor(ev) }),
-                }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onSelectEvent(ev)
-                }}
-                title={`${ev.title} — ${ownerLabel(ev)}`}
-              >
-                <span className="font-bold opacity-90">{format(parseISO(ev.start_at), 'HH:mm')} · {ownerLabel(ev)}</span>
-                <span className="overflow-hidden text-ellipsis whitespace-nowrap">{ev.title}</span>
-              </button>
+              <div key={h} className="-translate-y-[7px] pr-1.5 text-right text-[0.7rem] text-muted" style={{ height: HOUR_HEIGHT }}>
+                {h === 0 ? '' : format(new Date(2000, 0, 1, h), 'HH:mm')}
+              </div>
             ))}
           </div>
-        ))}
+          {perDay.map(({ day, timed }) => (
+            <div
+              key={day.toISOString()}
+              className="relative border-l border-line"
+              style={{ height: HOUR_HEIGHT * 24 }}
+              onClick={(e) => handleColumnClick(e, day, onSelectSlot)}
+            >
+              {HOURS.map((h) => (
+                <div key={h} className="pointer-events-none absolute right-0 left-0 border-t border-line" style={{ top: h * HOUR_HEIGHT }} />
+              ))}
+              {timed.map(({ ev, top, height, lane, lanes }) => (
+                <button
+                  key={ev.id}
+                  className="absolute flex flex-col overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-[0.72rem] leading-tight text-white shadow-sm hover:z-[5] hover:brightness-105"
+                  style={{
+                    top: (top / 60) * HOUR_HEIGHT,
+                    height: (height / 60) * HOUR_HEIGHT - 2,
+                    left: `calc(${(lane / lanes) * 100}% + 2px)`,
+                    width: `calc(${100 / lanes}% - 4px)`,
+                    background: eventColor(ev),
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSelectEvent(ev)
+                  }}
+                  title={`${ev.title} — ${ownerLabel(ev)}`}
+                >
+                  <span className="font-bold opacity-90">{format(parseISO(ev.start_at), 'HH:mm')} · {ownerLabel(ev)}</span>
+                  <span className="overflow-hidden text-ellipsis whitespace-nowrap">{ev.title}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

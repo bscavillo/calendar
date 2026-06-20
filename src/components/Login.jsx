@@ -77,7 +77,7 @@ export default function Login() {
         onSubmit={handleSubmit}
       >
         <h1 className="text-2xl font-semibold">Calendar</h1>
-        <p className="mt-1 text-muted">{mode === 'signin' ? 'Welcome back.' : 'Create your account.'}</p>
+        <p className="mt-1 text-muted">{mode === 'signin' ? 'Haiiii' : 'Create your account.'}</p>
 
         {mode === 'signup' && (
           <label className="field-label">
@@ -87,7 +87,7 @@ export default function Login() {
               className="field"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="e.g. Benedict"
+              placeholder="e.g. Johann"
             />
           </label>
         )}

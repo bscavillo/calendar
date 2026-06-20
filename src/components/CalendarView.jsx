@@ -114,9 +114,11 @@ export default function CalendarView({ session }) {
     return map
   }, [days, events])
 
-  // The chip color comes from the owner's chosen profile color; shared events
-  // get a distinct gradient handled in CSS.
-  function ownerColor(ev) {
+  // Each event carries its own chosen color. Older events without one fall back
+  // to a shared-pink / owner-color default.
+  function eventColor(ev) {
+    if (ev.color) return ev.color
+    if (ev.is_shared) return '#e7a8cd'
     return profiles[ev.owner_id]?.color || (ev.owner_id === userId ? '#a99ce6' : '#9fbef0')
   }
 
@@ -144,20 +146,22 @@ export default function CalendarView({ session }) {
     <div className="mx-auto max-w-[1200px] p-5">
       <header className="mb-4 flex flex-wrap items-center gap-4">
         <div className="text-xl leading-none font-bold text-mine-strong">Calendar</div>
-        <div className="relative flex items-center gap-1.5">
-          <button className="flex h-9 w-9 items-center justify-center rounded-sm text-2xl leading-none text-mine-strong hover:bg-canvas" onClick={() => step(-1)} aria-label="Previous">‹</button>
-          <button
-            type="button"
-            className="flex h-9 min-w-[170px] items-center justify-center gap-1 rounded-sm px-2 text-lg font-semibold hover:bg-canvas"
-            onClick={() => setPickerOpen((o) => !o)}
-            aria-haspopup="true"
-            aria-expanded={pickerOpen}
-          >
-            {title(view, cursor, rangeStart, rangeEnd)}
-            <span className="text-xs text-muted">▾</span>
-          </button>
-          <button className="flex h-9 w-9 items-center justify-center rounded-sm text-2xl leading-none text-mine-strong hover:bg-canvas" onClick={() => step(1)} aria-label="Next">›</button>
-          <button className="btn btn-ghost ml-2 px-3 py-1.5" onClick={() => setCursor(new Date())}>Today</button>
+        <div className="relative flex items-center gap-2">
+          <div className="flex items-center gap-0.5">
+            <button className="flex h-9 w-7 items-center justify-center rounded-sm text-2xl leading-none text-mine-strong hover:bg-canvas" onClick={() => step(-1)} aria-label="Previous">‹</button>
+            <button
+              type="button"
+              className="flex h-9 items-center justify-center gap-1 rounded-sm px-2 text-lg font-semibold hover:bg-canvas"
+              onClick={() => setPickerOpen((o) => !o)}
+              aria-haspopup="true"
+              aria-expanded={pickerOpen}
+            >
+              {title(view, cursor, rangeStart, rangeEnd)}
+              <span className="text-xs text-muted">▾</span>
+            </button>
+            <button className="flex h-9 w-7 items-center justify-center rounded-sm text-2xl leading-none text-mine-strong hover:bg-canvas" onClick={() => step(1)} aria-label="Next">›</button>
+          </div>
+          <button className="btn btn-ghost px-3 py-1.5" onClick={() => setCursor(new Date())}>Today</button>
 
           {pickerOpen && (
             <>
@@ -242,8 +246,8 @@ export default function CalendarView({ session }) {
                     {dayEvents.map((ev) => (
                       <button
                         key={ev.id}
-                        className={`chip ${ev.is_shared ? 'bg-shared' : ''}`}
-                        style={ev.is_shared ? undefined : { background: ownerColor(ev) }}
+                        className="chip"
+                        style={{ background: eventColor(ev) }}
                         onClick={(e) => {
                           e.stopPropagation()
                           setModal({ mode: 'view', event: ev })

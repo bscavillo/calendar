@@ -65,8 +65,8 @@
     @apply mt-3.5 block text-xs font-semibold text-muted;
   }
 
-  /* Small event pill (month grid + all-day strip). Background comes from the
-     owner's color inline, or .bg-shared for shared events. */
+  /* Small event pill (month grid + all-day row). Background is the event's
+     chosen color, applied inline. */
   .chip {
     @apply flex items-baseline gap-1.5 overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-xs whitespace-nowrap text-white hover:brightness-105;
   }

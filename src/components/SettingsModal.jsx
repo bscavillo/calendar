@@ -1,16 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
-// A small palette so each partner can pick a personal color without a full
-// color picker. Pastel purple / blue lead as the defaults.
-const PALETTE = [
-  '#a99ce6', '#9fbef0', '#e7a8cd', '#c2a892',
-  '#9fd6c2', '#d6b3e6', '#e6c79f', '#a9c9e6',
-]
-
 export default function SettingsModal({ session, profile, onClose }) {
   const [displayName, setDisplayName] = useState(profile?.display_name || '')
-  const [color, setColor] = useState(profile?.color || PALETTE[0])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
@@ -23,7 +15,7 @@ export default function SettingsModal({ session, profile, onClose }) {
       if (!name) throw new Error('Please enter a name.')
       const { error } = await supabase
         .from('profiles')
-        .update({ display_name: name, color })
+        .update({ display_name: name })
         .eq('id', session.user.id)
       if (error) throw error
       onClose()
@@ -55,20 +47,6 @@ export default function SettingsModal({ session, profile, onClose }) {
             placeholder="e.g. Benedict"
           />
         </label>
-
-        <label className="field-label">Your color</label>
-        <div className="mt-2 flex flex-wrap gap-2.5">
-          {PALETTE.map((c) => (
-            <button
-              type="button"
-              key={c}
-              className={`h-8 w-8 rounded-sm p-0 ${c === color ? 'ring-2 ring-ink' : 'ring-1 ring-line'}`}
-              style={{ background: c }}
-              onClick={() => setColor(c)}
-              aria-label={`Choose color ${c}`}
-            />
-          ))}
-        </div>
 
         {error && <div className="mt-3.5 rounded-sm bg-danger/15 px-3 py-2.5 text-sm text-danger-strong">{error}</div>}
 
