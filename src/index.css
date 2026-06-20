@@ -32,11 +32,6 @@
   #root {
     height: 100%;
   }
-  /* Scales the whole UI: every rem-based size grows with this. 16px is the
-     browser default; bump it a notch for slightly larger text everywhere. */
-  html {
-    font-size: 17px;
-  }
   body {
     margin: 0;
     background: var(--color-canvas);
