@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { format, parseISO, addHours, setHours } from 'date-fns'
 import { supabase } from '../lib/supabaseClient'
+import {
+  browserTimeZone,
+  zoneAbbrev,
+  formatTimeInZone,
+  formatDateInZone,
+  zoneCity,
+} from '../lib/time'
 
 const REMIND_OPTIONS = [
   { value: '', label: 'No reminder' },
@@ -49,6 +56,14 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
   const start = parseISO(event.start_at)
   const end = parseISO(event.end_at)
 
+  // Show the time in the viewer's own zone, and — when the partner lives in a
+  // different zone — the same instant in theirs, so the alignment is visible.
+  const myTz = browserTimeZone()
+  const partner = Object.values(profiles).find((p) => p.id !== userId)
+  const partnerTz = partner?.timezone
+  const showPartnerTime =
+    !event.all_day && partnerTz && partnerTz !== myTz
+
   return (
     <Backdrop onClose={onClose}>
       <div className="modal">
@@ -61,9 +76,30 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
           <div>
             <dt>When</dt>
             <dd>
-              {event.all_day
-                ? format(start, 'EEE, MMM d') + ' · All day'
-                : `${format(start, 'EEE, MMM d · HH:mm')} – ${format(end, 'HH:mm')}`}
+              {event.all_day ? (
+                formatDateInZone(start, myTz) + ' · All day'
+              ) : (
+                <>
+                  <div className="when-zone">
+                    {formatDateInZone(start, myTz)} ·{' '}
+                    {formatTimeInZone(start, myTz)} – {formatTimeInZone(end, myTz)}
+                    <span className="zone-tag">
+                      {zoneAbbrev(myTz, start)} · your time
+                    </span>
+                  </div>
+                  {showPartnerTime && (
+                    <div className="when-zone partner-zone">
+                      {formatDateInZone(start, partnerTz)} ·{' '}
+                      {formatTimeInZone(start, partnerTz)} –{' '}
+                      {formatTimeInZone(end, partnerTz)}
+                      <span className="zone-tag">
+                        {zoneAbbrev(partnerTz, start)} ·{' '}
+                        {partner.display_name || zoneCity(partnerTz)}&rsquo;s time
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
             </dd>
           </div>
           {event.location && (
@@ -97,7 +133,11 @@ function FormMode({ initial, session, onClose }) {
   const [title, setTitle] = useState(editing ? ev.title : '')
   const [description, setDescription] = useState(editing ? ev.description || '' : '')
   const [location, setLocation] = useState(editing ? ev.location || '' : '')
-  const [dateStr, setDateStr] = useState(format(baseDate, 'yyyy-MM-dd'))
+  // All-day events are stored at noon UTC, so their date is the UTC date
+  // portion verbatim; reading it that way avoids any local-zone drift on edit.
+  const [dateStr, setDateStr] = useState(
+    editing && ev.all_day ? ev.start_at.slice(0, 10) : format(baseDate, 'yyyy-MM-dd')
+  )
   const [allDay, setAllDay] = useState(editing ? ev.all_day : false)
   const [startTime, setStartTime] = useState(
     editing ? format(parseISO(ev.start_at), 'HH:mm') : format(times.start, 'HH:mm')
@@ -117,8 +157,13 @@ function FormMode({ initial, session, onClose }) {
     try {
       let start_at, end_at
       if (allDay) {
-        start_at = new Date(`${dateStr}T00:00:00`).toISOString()
-        end_at = new Date(`${dateStr}T23:59:00`).toISOString()
+        // All-day events are a calendar date, not an instant: a birthday on
+        // Jun 20 is Jun 20 in every zone. Anchoring to noon UTC keeps the date
+        // stable when viewed from any realistic zone (instead of local midnight,
+        // which would drift the event onto the previous/next day for a partner
+        // in another zone).
+        start_at = `${dateStr}T12:00:00.000Z`
+        end_at = `${dateStr}T12:00:00.000Z`
       } else {
         start_at = new Date(`${dateStr}T${startTime}`).toISOString()
         end_at = new Date(`${dateStr}T${endTime}`).toISOString()

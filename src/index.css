@@ -417,6 +417,17 @@ textarea { resize: vertical; }
 .detail-list dt { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; }
 .detail-list dd { margin: 2px 0 0; font-size: 0.98rem; }
 
+.when-zone { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.when-zone + .when-zone { margin-top: 4px; }
+.when-zone.partner-zone { color: var(--muted); }
+.zone-tag {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

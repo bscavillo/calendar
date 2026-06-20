@@ -23,6 +23,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useEvents } from '../hooks/useEvents'
 import { useProfiles } from '../hooks/useProfiles'
 import { useReminders, requestNotificationPermission } from '../hooks/useReminders'
+import { browserTimeZone } from '../lib/time'
 import EventModal from './EventModal'
 import SettingsModal from './SettingsModal'
 import TimeGridView from './TimeGridView'
@@ -62,6 +63,24 @@ export default function CalendarView({ session }) {
   useEffect(() => {
     requestNotificationPermission()
   }, [])
+
+  // Keep this user's stored zone in sync with their device so the partner always
+  // sees this person's events in the right local time (even after they travel).
+  const myTz = profiles[userId]?.timezone
+  useEffect(() => {
+    if (!profiles[userId]) return // profile not loaded yet
+    const current = browserTimeZone()
+    if (myTz === current) return
+    supabase
+      .from('profiles')
+      .update({ timezone: current })
+      .eq('id', userId)
+      .then(({ error }) => {
+        // Silent: a missing column (pre-migration) or transient error shouldn't
+        // break the calendar; alignment still works via the browser's own zone.
+        if (error) console.warn('Could not save timezone:', error.message)
+      })
+  }, [userId, myTz, profiles])
 
   const days = useMemo(
     () => eachDayOfInterval({ start: rangeStart, end: rangeEnd }),

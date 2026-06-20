@@ -10,7 +10,7 @@ export function useProfiles() {
   const fetchProfiles = useCallback(async () => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, display_name, color')
+      .select('id, display_name, color, timezone')
     if (data) {
       const map = {}
       for (const p of data) map[p.id] = p
