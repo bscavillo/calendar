@@ -60,10 +60,9 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
     })
   }, [days, events])
 
-  // Day columns keep a minimum width in week view so they scroll horizontally on
-  // narrow screens rather than squashing; the single day view just fills.
-  const minCol = days.length === 1 ? '0' : '6rem'
-  const gridCols = { gridTemplateColumns: `48px repeat(${days.length}, minmax(${minCol}, 1fr))` }
+  // Columns share the available width equally (minmax(0,…) lets them shrink), so
+  // the whole week fits on a phone without horizontal scrolling — like the month.
+  const gridCols = { gridTemplateColumns: `44px repeat(${days.length}, minmax(0, 1fr))` }
 
   return (
     <div
@@ -90,7 +89,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
 
       {/* All-day row — a normal row that scrolls with the grid. */}
       <div className="grid border-b border-line" style={gridCols}>
-        <div className="sticky left-0 z-10 flex items-start justify-end bg-surface pt-1.5 pr-1.5 text-[0.66rem] font-bold tracking-wide text-muted uppercase">all-day</div>
+        <div className="sticky left-0 z-10 bg-surface pt-1.5 pr-1.5 text-right text-[0.66rem] font-bold tracking-wide text-muted uppercase">all-day</div>
         {perDay.map(({ day, allDay }) => (
           <div key={day.toISOString()} className="flex min-h-[34px] flex-col gap-0.5 border-l border-line p-1">
             {allDay.map((ev) => (
