@@ -42,11 +42,17 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
     })
   }, [days, events])
 
-  const gridCols = { gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }
+  // Shared by all three rows. `scrollbarGutter: stable` reserves the scrollbar
+  // space in every row — not just the scrolling body — so the day columns in the
+  // header, all-day strip and grid stay aligned.
+  const gridCols = {
+    gridTemplateColumns: `56px repeat(${days.length}, 1fr)`,
+    scrollbarGutter: 'stable',
+  }
 
   return (
     <div className="overflow-hidden rounded-sm bg-surface shadow-[0_8px_30px_rgba(120,110,160,0.12)]">
-      <div className="grid border-b border-line" style={gridCols}>
+      <div className="grid overflow-hidden border-b border-line" style={gridCols}>
         <div />
         {perDay.map(({ day }) => (
           <div key={day.toISOString()} className="flex flex-col gap-0.5 border-l border-line px-1 py-2 text-center">
