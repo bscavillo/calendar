@@ -56,7 +56,7 @@ export default function Login() {
           </p>
           <button
             type="button"
-            className="mt-4 w-full text-sm text-mine-strong underline"
+            className="mt-4 w-full text-sm text-accent-strong underline"
             onClick={() => {
               setConfirmSent(false)
               setMode('signin')
@@ -127,7 +127,7 @@ export default function Login() {
 
         <button
           type="button"
-          className="mt-4 w-full text-sm text-mine-strong underline"
+          className="mt-4 w-full text-sm text-accent-strong underline"
           onClick={() => {
             setMode(mode === 'signin' ? 'signup' : 'signin')
             setError(null)

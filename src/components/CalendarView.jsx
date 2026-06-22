@@ -138,10 +138,10 @@ export default function CalendarView({ session }) {
   return (
     <div className="mx-auto max-w-[1200px] p-3 sm:p-5 min-[1333px]:max-w-[90vw]">
       <header className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-4">
-        <div className="hidden text-xl leading-none font-bold text-mine-strong sm:block">Calendar</div>
+        <div className="hidden text-xl leading-none font-bold text-accent-strong sm:block">Calendar</div>
         <div className="relative flex min-w-0 items-center gap-2">
           <div className="flex min-w-0 items-center gap-0.5">
-            <button className="flex h-9 w-7 shrink-0 items-center justify-center rounded-sm text-mine-strong hover:bg-canvas" onClick={() => step(-1)} aria-label="Previous">
+            <button className="flex h-9 w-7 shrink-0 items-center justify-center rounded-sm text-accent-strong hover:bg-canvas" onClick={() => step(-1)} aria-label="Previous">
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             </button>
             <button
@@ -154,7 +154,7 @@ export default function CalendarView({ session }) {
               <span className="truncate">{title(view, cursor, rangeStart, rangeEnd)}</span>
               <span className="shrink-0 text-xs text-muted">▾</span>
             </button>
-            <button className="flex h-9 w-7 shrink-0 items-center justify-center rounded-sm text-mine-strong hover:bg-canvas" onClick={() => step(1)} aria-label="Next">
+            <button className="flex h-9 w-7 shrink-0 items-center justify-center rounded-sm text-accent-strong hover:bg-canvas" onClick={() => step(1)} aria-label="Next">
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
             </button>
           </div>
@@ -165,7 +165,7 @@ export default function CalendarView({ session }) {
               <div className="fixed inset-0 z-10" onClick={() => setPickerOpen(false)} />
               <div className="absolute top-full left-0 z-20 mt-1 flex gap-2 rounded-sm border border-line bg-surface p-2 shadow-[0_8px_30px_rgba(120,110,160,0.18)]">
                 <select
-                  className="rounded-sm border border-line bg-white px-2 py-1.5 text-sm text-ink focus:border-mine focus:outline-none"
+                  className="rounded-sm border border-line bg-white px-2 py-1.5 text-sm text-ink focus:border-accent focus:outline-none"
                   value={getMonth(cursor)}
                   onChange={(e) => setCursor(setMonth(cursor, Number(e.target.value)))}
                 >
@@ -174,7 +174,7 @@ export default function CalendarView({ session }) {
                   ))}
                 </select>
                 <select
-                  className="rounded-sm border border-line bg-white px-2 py-1.5 text-sm text-ink focus:border-mine focus:outline-none"
+                  className="rounded-sm border border-line bg-white px-2 py-1.5 text-sm text-ink focus:border-accent focus:outline-none"
                   value={getYear(cursor)}
                   onChange={(e) => setCursor(setYear(cursor, Number(e.target.value)))}
                 >
@@ -192,7 +192,7 @@ export default function CalendarView({ session }) {
               <button
                 key={v}
                 className={`rounded-sm px-3 py-1.5 text-sm font-semibold ${
-                  view === v ? 'bg-mine text-white' : 'text-muted hover:text-mine-strong'
+                  view === v ? 'bg-accent text-white' : 'text-muted hover:text-accent-strong'
                 }`}
                 onClick={() => setView(v)}
               >
@@ -223,15 +223,15 @@ export default function CalendarView({ session }) {
               return (
                 <div
                   key={key}
-                  className={`flex cursor-pointer flex-col gap-1 overflow-hidden rounded-sm border p-1 hover:border-mine sm:p-2 ${
-                    today ? 'border-mine' : 'border-transparent'
+                  className={`flex cursor-pointer flex-col gap-1 overflow-hidden rounded-sm border p-1 hover:border-accent sm:p-2 ${
+                    today ? 'border-accent' : 'border-transparent'
                   } ${outside ? 'bg-surface/50' : 'bg-surface'}`}
                   onClick={() => setModal({ mode: 'create', date: day })}
                 >
                   <div
                     className={`text-sm font-bold ${
                       today
-                        ? 'grid h-[26px] w-[26px] place-items-center rounded-sm bg-mine text-white'
+                        ? 'grid h-[26px] w-[26px] place-items-center rounded-sm bg-accent text-white'
                         : outside
                         ? 'text-muted'
                         : ''

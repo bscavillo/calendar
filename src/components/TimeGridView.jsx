@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { format, isToday, parseISO } from 'date-fns'
 import { eventColor } from '../lib/eventColor'
 
-const HOUR_HEIGHT = 48 // px per hour
+const MIN_HOUR_HEIGHT = 48 // px per hour (short screens / minimum)
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
 // A scrollable hour-by-hour grid used by both the week view (7 day columns)
@@ -13,18 +13,38 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i)
 export default function TimeGridView({ days, events, userId, profiles, onSelectEvent, onSelectSlot }) {
   const scrollRef = useRef(null)
   const headRef = useRef(null)
+  const allDayRef = useRef(null)
   const hourGridRef = useRef(null)
+  const [hourHeight, setHourHeight] = useState(MIN_HOUR_HEIGHT)
 
-  // Start scrolled to ~7am so the morning is visible without scrolling up. The
-  // header and all-day row sit above the hour grid in the same scroller, so the
-  // target is offset past them and back up by the sticky header's height.
+  // Size the 24 hour rows to fill the scroller, so the whole day is visible
+  // without vertical scrolling on a tall (desktop) viewport. On short screens
+  // the rows bottom out at MIN_HOUR_HEIGHT and the grid scrolls instead.
+  useLayoutEffect(() => {
+    const body = scrollRef.current
+    if (!body) return
+    const measure = () => {
+      const headH = headRef.current?.offsetHeight || 0
+      const allDayH = allDayRef.current?.offsetHeight || 0
+      const available = body.clientHeight - headH - allDayH
+      setHourHeight(Math.max(MIN_HOUR_HEIGHT, Math.floor(available / 24)))
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(body)
+    return () => ro.disconnect()
+  }, [days.length])
+
+  // Start scrolled to ~7am so the morning is visible when the grid does scroll
+  // (short screens). The header and all-day row share the scroller, so offset
+  // past them and back up by the sticky header's height.
   useEffect(() => {
     const body = scrollRef.current
     const grid = hourGridRef.current
     if (!body || !grid) return
     const headH = headRef.current ? headRef.current.offsetHeight : 0
-    body.scrollTop = Math.max(grid.offsetTop - headH + 7 * HOUR_HEIGHT, 0)
-  }, [days.length])
+    body.scrollTop = Math.max(grid.offsetTop - headH + 7 * hourHeight, 0)
+  }, [days.length, hourHeight])
 
   // Whose event it is, shown inline on each event (replaces the color legend).
   function ownerLabel(ev) {
@@ -63,7 +83,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
   return (
     <div
       ref={scrollRef}
-      className="relative max-h-[70dvh] overflow-auto rounded-sm bg-surface shadow-[0_8px_30px_rgba(120,110,160,0.12)] sm:max-h-[calc(100dvh-190px)]"
+      className="relative max-h-[70dvh] overflow-auto rounded-sm bg-surface shadow-[0_8px_30px_rgba(120,110,160,0.12)] sm:max-h-none sm:h-[calc(100dvh-180px)]"
     >
       {/* Day-name header: sticks to the top on vertical scroll, moves with the
           grid on horizontal scroll. */}
@@ -74,7 +94,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
             <span className="text-xs font-bold tracking-wide text-muted uppercase">{format(day, 'EEE')}</span>
             <span
               className={`text-lg font-bold ${
-                isToday(day) ? 'mx-auto grid h-7 w-7 place-items-center rounded-sm bg-mine text-white' : ''
+                isToday(day) ? 'mx-auto grid h-7 w-7 place-items-center rounded-sm bg-accent text-white' : ''
               }`}
             >
               {format(day, 'd')}
@@ -84,7 +104,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
       </div>
 
       {/* All-day row — a normal row that scrolls with the grid. */}
-      <div className="grid border-b border-line" style={gridCols}>
+      <div ref={allDayRef} className="grid border-b border-line" style={gridCols}>
         <div className="sticky left-0 z-10 bg-surface pt-1.5 pr-1.5 text-right text-xs whitespace-nowrap text-muted font-bold">All-day</div>
         {perDay.map(({ day, allDay }) => (
           <div key={day.toISOString()} className="flex min-h-[34px] flex-col gap-0.5 border-l border-line p-1">
@@ -108,7 +128,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
       <div className="grid" style={gridCols} ref={hourGridRef}>
         <div className="sticky left-0 z-10 bg-surface">
           {HOURS.map((h) => (
-            <div key={h} className="-translate-y-[7px] pr-1.5 text-right text-[0.7rem] text-muted" style={{ height: HOUR_HEIGHT }}>
+            <div key={h} className="-translate-y-[7px] pr-1.5 text-right text-[0.7rem] text-muted" style={{ height: hourHeight }}>
               {h === 0 ? '' : format(new Date(2000, 0, 1, h), 'HH:mm')}
             </div>
           ))}
@@ -117,19 +137,19 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
           <div
             key={day.toISOString()}
             className="relative border-l border-line"
-            style={{ height: HOUR_HEIGHT * 24 }}
-            onClick={(e) => handleColumnClick(e, day, onSelectSlot)}
+            style={{ height: hourHeight * 24 }}
+            onClick={(e) => handleColumnClick(e, day, onSelectSlot, hourHeight)}
           >
             {HOURS.map((h) => (
-              <div key={h} className="pointer-events-none absolute right-0 left-0 border-t border-line" style={{ top: h * HOUR_HEIGHT }} />
+              <div key={h} className="pointer-events-none absolute right-0 left-0 border-t border-line" style={{ top: h * hourHeight }} />
             ))}
             {timed.map(({ ev, top, height, lane, lanes }) => (
               <button
                 key={ev.id}
                 className="absolute flex flex-col overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-[0.72rem] leading-tight text-white shadow-sm hover:z-[5] hover:brightness-105"
                 style={{
-                  top: (top / 60) * HOUR_HEIGHT,
-                  height: (height / 60) * HOUR_HEIGHT - 2,
+                  top: (top / 60) * hourHeight,
+                  height: (height / 60) * hourHeight - 2,
                   left: `calc(${(lane / lanes) * 100}% + 2px)`,
                   width: `calc(${100 / lanes}% - 4px)`,
                   background: eventColor(ev, userId),
@@ -152,10 +172,10 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
 }
 
 // Clicking an empty part of a day column opens the new-event form at that hour.
-function handleColumnClick(e, day, onSelectSlot) {
+function handleColumnClick(e, day, onSelectSlot, hourHeight) {
   const rect = e.currentTarget.getBoundingClientRect()
   const y = e.clientY - rect.top
-  const hour = Math.min(23, Math.max(0, Math.floor(y / HOUR_HEIGHT)))
+  const hour = Math.min(23, Math.max(0, Math.floor(y / hourHeight)))
   const d = new Date(day)
   d.setHours(hour, 0, 0, 0)
   onSelectSlot(d)
