@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { expandEvents } from '../lib/recurrence'
 
 // Fetches all events that overlap [rangeStart, rangeEnd) and keeps them
 // live via Supabase realtime so both partners see changes instantly.
@@ -13,16 +14,21 @@ export function useEvents(rangeStart, rangeEnd) {
 
   const fetchEvents = useCallback(async () => {
     setLoading(true)
-    // An event is visible in the window if it starts before the window ends
-    // and ends after the window starts.
+    // A one-off event is visible if it starts before the window ends and ends
+    // after the window starts. A recurring master is relevant if it started
+    // before the window ends and its series hasn't already finished — its
+    // concrete occurrences are then generated client-side by expandEvents.
+    const dayStart = startISO.slice(0, 10)
     const { data, error } = await supabase
       .from('events')
       .select('*')
-      .lt('start_at', endISO)
-      .gt('end_at', startISO)
+      .or(
+        `and(recurrence_freq.is.null,start_at.lt.${endISO},end_at.gt.${startISO}),` +
+          `and(recurrence_freq.not.is.null,start_at.lt.${endISO},or(recurrence_until.is.null,recurrence_until.gte.${dayStart}))`
+      )
       .order('start_at', { ascending: true })
     if (error) setError(error.message)
-    else setEvents(data ?? [])
+    else setEvents(expandEvents(data ?? [], new Date(startISO), new Date(endISO)))
     setLoading(false)
   }, [startISO, endISO])
 

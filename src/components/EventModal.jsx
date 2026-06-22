@@ -8,6 +8,7 @@ import {
   zoneCity,
 } from '../lib/time'
 import { eventColor } from '../lib/eventColor'
+import { RECURRENCE_OPTIONS, recurrenceLabel } from '../lib/recurrence'
 
 const REMIND_OPTIONS = [
   { value: '', label: 'No reminder' },
@@ -47,7 +48,10 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
   }
 
   async function handleDelete() {
-    if (!confirm('Delete this event?')) return
+    const prompt = event.recurrence_freq
+      ? 'Delete this repeating event and all its occurrences?'
+      : 'Delete this event?'
+    if (!confirm(prompt)) return
     const { error } = await supabase.from('events').delete().eq('id', event.id)
     if (error) alert(error.message)
     else onClose()
@@ -98,6 +102,15 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
               )}
             </dd>
           </div>
+          {event.recurrence_freq && (
+            <div className="mb-3">
+              <dt className="text-xs font-bold tracking-wide text-muted uppercase">Repeats</dt>
+              <dd className="mt-0.5 text-base">
+                {recurrenceLabel(event)}
+                {event.recurrence_until && ` · until ${formatDateInZone(parseISO(event.recurrence_until), myTz)}`}
+              </dd>
+            </div>
+          )}
           {event.location && (
             <div className="mb-3"><dt className="text-xs font-bold tracking-wide text-muted uppercase">Where</dt><dd className="mt-0.5 text-base">{event.location}</dd></div>
           )}
@@ -123,7 +136,11 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
 function FormMode({ initial, session, onClose }) {
   const editing = initial.mode === 'edit'
   const ev = initial.event
-  const baseDate = editing ? parseISO(ev.start_at) : (initial.date || new Date())
+  // When editing a recurring occurrence, prefill from the series anchor (its
+  // original first-occurrence times) so saving never silently shifts the series.
+  const srcStart = editing ? ev.series_start_at || ev.start_at : null
+  const srcEnd = editing ? ev.series_end_at || ev.end_at : null
+  const baseDate = editing ? parseISO(srcStart) : (initial.date || new Date())
   const times = defaultTimes(baseDate)
 
   const [title, setTitle] = useState(editing ? ev.title : '')
@@ -132,17 +149,22 @@ function FormMode({ initial, session, onClose }) {
   // All-day events are stored at noon UTC, so their date is the UTC date
   // portion verbatim; reading it that way avoids any local-zone drift on edit.
   const [dateStr, setDateStr] = useState(
-    editing && ev.all_day ? ev.start_at.slice(0, 10) : format(baseDate, 'yyyy-MM-dd')
+    editing && ev.all_day ? srcStart.slice(0, 10) : format(baseDate, 'yyyy-MM-dd')
   )
   const [allDay, setAllDay] = useState(editing ? ev.all_day : false)
   const [startTime, setStartTime] = useState(
-    editing ? format(parseISO(ev.start_at), 'HH:mm') : format(times.start, 'HH:mm')
+    editing ? format(parseISO(srcStart), 'HH:mm') : format(times.start, 'HH:mm')
   )
   const [endTime, setEndTime] = useState(
-    editing ? format(parseISO(ev.end_at), 'HH:mm') : format(times.end, 'HH:mm')
+    editing ? format(parseISO(srcEnd), 'HH:mm') : format(times.end, 'HH:mm')
   )
   const [isShared, setIsShared] = useState(editing ? ev.is_shared : false)
   const [remind, setRemind] = useState(editing && ev.remind_minutes != null ? String(ev.remind_minutes) : '')
+  const [repeats, setRepeats] = useState(editing ? !!ev.recurrence_freq : false)
+  const [recurFreq, setRecurFreq] = useState(editing && ev.recurrence_freq ? ev.recurrence_freq : 'weekly')
+  const [recurUntil, setRecurUntil] = useState(
+    editing && ev.recurrence_until ? String(ev.recurrence_until).slice(0, 10) : ''
+  )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
@@ -167,6 +189,9 @@ function FormMode({ initial, session, onClose }) {
           throw new Error('End time must be after start time.')
         }
       }
+      if (repeats && recurUntil && recurUntil < dateStr) {
+        throw new Error('The repeat end date must be on or after the start date.')
+      }
       const payload = {
         title: title.trim(),
         description: description.trim() || null,
@@ -176,6 +201,8 @@ function FormMode({ initial, session, onClose }) {
         all_day: allDay,
         is_shared: isShared,
         remind_minutes: remind === '' ? null : Number(remind),
+        recurrence_freq: repeats ? recurFreq : null,
+        recurrence_until: repeats && recurUntil ? recurUntil : null,
       }
       if (editing) {
         const { error } = await supabase.from('events').update(payload).eq('id', ev.id)
@@ -198,6 +225,9 @@ function FormMode({ initial, session, onClose }) {
     <Backdrop onClose={onClose}>
       <form className={MODAL} onSubmit={handleSubmit}>
         <h2 className="text-xl font-semibold">{editing ? 'Edit event' : 'New event'}</h2>
+        {editing && ev.recurrence_freq && (
+          <p className="mt-1 text-sm text-muted">Changes apply to the whole repeating series.</p>
+        )}
 
         <label className="field-label">
           Title
@@ -225,6 +255,31 @@ function FormMode({ initial, session, onClose }) {
               <input type="time" required className="field" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
             </label>
           </div>
+        )}
+
+        <label className="mt-3.5 flex items-center gap-2 font-semibold text-ink">
+          <input type="checkbox" className="h-4 w-4" checked={repeats} onChange={(e) => setRepeats(e.target.checked)} />
+          Repeats
+        </label>
+
+        {repeats && (
+          <>
+            <div className="flex gap-3">
+              <label className="field-label flex-1">
+                How often
+                <select className="field" value={recurFreq} onChange={(e) => setRecurFreq(e.target.value)}>
+                  {RECURRENCE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="field-label flex-1">
+                Until
+                <input type="date" className="field" value={recurUntil} min={dateStr} onChange={(e) => setRecurUntil(e.target.value)} />
+              </label>
+            </div>
+            <p className="mt-1 text-xs text-muted">Leave “Until” empty to repeat with no end date.</p>
+          </>
         )}
 
         <label className="field-label">

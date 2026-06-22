@@ -242,7 +242,7 @@ export default function CalendarView({ session }) {
                   <div className="flex flex-col gap-0.5 overflow-hidden">
                     {dayEvents.map((ev) => (
                       <button
-                        key={ev.id}
+                        key={ev.instanceKey || ev.id}
                         className="chip"
                         style={{ background: eventColor(ev, userId) }}
                         onClick={(e) => {

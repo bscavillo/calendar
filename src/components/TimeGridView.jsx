@@ -110,7 +110,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
           <div key={day.toISOString()} className="flex min-h-[34px] flex-col gap-0.5 border-l border-line p-1">
             {allDay.map((ev) => (
               <button
-                key={ev.id}
+                key={ev.instanceKey || ev.id}
                 className="chip"
                 style={{ background: eventColor(ev, userId) }}
                 onClick={() => onSelectEvent(ev)}
@@ -145,7 +145,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
             ))}
             {timed.map(({ ev, top, height, lane, lanes }) => (
               <button
-                key={ev.id}
+                key={ev.instanceKey || ev.id}
                 className="absolute flex flex-col overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-[0.72rem] leading-tight text-white shadow-sm hover:z-[5] hover:brightness-105"
                 style={{
                   top: (top / 60) * hourHeight,
