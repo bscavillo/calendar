@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { format, isToday, parseISO } from 'date-fns'
+import { eventColor } from '../lib/eventColor'
 
 const HOUR_HEIGHT = 48 // px per hour
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -24,11 +25,6 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
     const headH = headRef.current ? headRef.current.offsetHeight : 0
     body.scrollTop = Math.max(grid.offsetTop - headH + 7 * HOUR_HEIGHT, 0)
   }, [days.length])
-
-  // Each event carries its own chosen color; default to pastel purple.
-  function eventColor(ev) {
-    return ev.color || '#a99ce6'
-  }
 
   // Whose event it is, shown inline on each event (replaces the color legend).
   function ownerLabel(ev) {
@@ -96,7 +92,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
               <button
                 key={ev.id}
                 className="chip"
-                style={{ background: eventColor(ev) }}
+                style={{ background: eventColor(ev, userId) }}
                 onClick={() => onSelectEvent(ev)}
                 title={`${ev.title} — ${ownerLabel(ev)}`}
               >
@@ -136,7 +132,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
                   height: (height / 60) * HOUR_HEIGHT - 2,
                   left: `calc(${(lane / lanes) * 100}% + 2px)`,
                   width: `calc(${100 / lanes}% - 4px)`,
-                  background: eventColor(ev),
+                  background: eventColor(ev, userId),
                 }}
                 onClick={(e) => {
                   e.stopPropagation()

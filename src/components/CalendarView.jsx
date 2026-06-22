@@ -28,6 +28,7 @@ import { useEvents } from '../hooks/useEvents'
 import { useProfiles } from '../hooks/useProfiles'
 import { useReminders, requestNotificationPermission } from '../hooks/useReminders'
 import { browserTimeZone } from '../lib/time'
+import { eventColor } from '../lib/eventColor'
 import EventModal from './EventModal'
 import SettingsModal from './SettingsModal'
 import TimeGridView from './TimeGridView'
@@ -45,7 +46,7 @@ const YEARS = Array.from({ length: 11 }, (_, i) => THIS_YEAR - 4 + i)
 export default function CalendarView({ session }) {
   const userId = session.user.id
   const [cursor, setCursor] = useState(new Date())
-  const [view, setView] = useState('month')
+  const [view, setView] = useState('week')
   const { profiles } = useProfiles()
   const [modal, setModal] = useState(null) // { mode, event?, date? } or null
   const [showSettings, setShowSettings] = useState(false)
@@ -113,11 +114,6 @@ export default function CalendarView({ session }) {
     }
     return map
   }, [days, events])
-
-  // Each event carries its own chosen color; default to pastel purple.
-  function eventColor(ev) {
-    return ev.color || '#a99ce6'
-  }
 
   // Whose event it is, shown inline on each chip (replaces the color legend).
   function ownerLabel(ev) {
@@ -248,7 +244,7 @@ export default function CalendarView({ session }) {
                       <button
                         key={ev.id}
                         className="chip"
-                        style={{ background: eventColor(ev) }}
+                        style={{ background: eventColor(ev, userId) }}
                         onClick={(e) => {
                           e.stopPropagation()
                           setModal({ mode: 'view', event: ev })

@@ -7,10 +7,10 @@
 @theme {
   --font-sans: sans-serif;
 
-  --color-mine: #a99ce6;        /* pastel purple — default "you" */
-  --color-mine-strong: #8b7bd4;
-  --color-partner: #9fbef0;     /* pastel blue — default partner */
-  --color-partner-strong: #7ba0e0;
+  --color-partner: #a99ce6;        /* pastel purple — default "you" */
+  --color-partner-strong: #8b7bd4;
+  --color-mine: #9fbef0;     /* pastel blue — default partner */
+  --color-mine-strong: #7ba0e0;
   --color-shared: #e7a8cd;      /* pastel pink — shared events */
   --color-shared-strong: #d889b8;
   --color-brown: #c2a892;       /* pastel brown — neutral accent */
