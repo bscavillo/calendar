@@ -132,6 +132,25 @@ export default function CalendarView({ session }) {
     await supabase.auth.signOut()
   }
 
+  // Persist a drag-to-move from the week/day grid. Moving a single occurrence of
+  // a recurring event records a per-occurrence override (keyed by its original
+  // start) so the rest of the series stays put; everything else just shifts the
+  // event's own start/end. Realtime then refreshes the grid for both partners.
+  async function handleMoveEvent(ev, startISO, endISO) {
+    let patch
+    if (ev.is_recurring_instance && ev.recurrence_freq) {
+      const key = ev.occurrenceKey || ev.series_start_at
+      patch = { overrides: { ...(ev.overrides || {}), [key]: { start_at: startISO, end_at: endISO } } }
+    } else {
+      patch = { start_at: startISO, end_at: endISO }
+    }
+    const { error } = await supabase.from('events').update(patch).eq('id', ev.id)
+    if (error) {
+      alert(error.message)
+      throw error
+    }
+  }
+
   const me = profiles[userId]
   const myName = me?.display_name || session.user.email.split('@')[0]
 
@@ -271,6 +290,7 @@ export default function CalendarView({ session }) {
           profiles={profiles}
           onSelectEvent={(ev) => setModal({ mode: 'view', event: ev })}
           onSelectSlot={(date) => setModal({ mode: 'create', date })}
+          onMoveEvent={handleMoveEvent}
         />
       )}
 

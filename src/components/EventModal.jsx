@@ -40,7 +40,6 @@ export default function EventModal({ session, profiles, initial, onClose }) {
 
 function ViewMode({ event, userId, profiles, onClose, session }) {
   const [editing, setEditing] = useState(false)
-  const isOwner = event.owner_id === userId
   const ownerName = event.owner_id === userId ? 'You' : (profiles[event.owner_id]?.display_name || 'Partner')
 
   if (editing) {
@@ -120,14 +119,9 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
         </dl>
         <div className="mt-5 flex justify-end gap-2.5">
           <button className="btn btn-ghost" onClick={onClose}>Close</button>
-          {isOwner && (
-            <>
-              <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
-              <button className="btn btn-primary" onClick={() => setEditing(true)}>Edit</button>
-            </>
-          )}
+          <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
+          <button className="btn btn-primary" onClick={() => setEditing(true)}>Edit</button>
         </div>
-        {!isOwner && <p className="mt-3 text-center text-sm text-muted">Only {ownerName.toLowerCase() === 'you' ? 'you' : ownerName} can edit this event.</p>}
       </div>
     </Backdrop>
   )
@@ -203,6 +197,17 @@ function FormMode({ initial, session, onClose }) {
         remind_minutes: remind === '' ? null : Number(remind),
         recurrence_freq: repeats ? recurFreq : null,
         recurrence_until: repeats && recurUntil ? recurUntil : null,
+      }
+      // Editing a recurring series re-times every occurrence, so any single
+      // occurrences that were dragged elsewhere no longer line up — drop those
+      // overrides rather than leave them stranded at their old offsets.
+      if (editing && ev.recurrence_freq) {
+        const timingChanged =
+          start_at !== ev.series_start_at ||
+          end_at !== ev.series_end_at ||
+          payload.recurrence_freq !== ev.recurrence_freq ||
+          (payload.recurrence_until || null) !== (ev.recurrence_until ? String(ev.recurrence_until).slice(0, 10) : null)
+        if (timingChanged) payload.overrides = null
       }
       if (editing) {
         const { error } = await supabase.from('events').update(payload).eq('id', ev.id)

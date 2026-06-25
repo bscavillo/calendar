@@ -61,6 +61,11 @@ const MAX_OCCURRENCES = 750
 // occurrence keeps the master's id (so edit/delete act on the whole series) but
 // gets its own `instanceKey` for React lists and the original master times under
 // `series_start_at`/`series_end_at` so editing can prefill the series anchor.
+//
+// A single occurrence can be moved (e.g. dragged in the week view) without
+// disturbing the rest of the series: the master's `overrides` map, keyed by the
+// occurrence's original start instant (`occurrenceKey`), supplies replacement
+// `start_at`/`end_at` for just that one occurrence.
 export function expandEvents(rows, rangeStart, rangeEnd) {
   const winStart = rangeStart.getTime()
   const winEnd = rangeEnd.getTime()
@@ -73,30 +78,52 @@ export function expandEvents(rows, rangeStart, rangeEnd) {
       continue
     }
 
+    const overrides = ev.overrides || {}
     const start = new Date(ev.start_at)
     const duration = new Date(ev.end_at).getTime() - start.getTime()
     const until = ev.recurrence_until
       ? new Date(`${String(ev.recurrence_until).slice(0, 10)}T23:59:59.999Z`).getTime()
       : Infinity
 
+    // Regular occurrences at their scheduled times. A moved occurrence is
+    // skipped here and re-emitted at its overridden time below, so it shows up
+    // in whatever window it now lands in.
     let n = initialSkip(ev.recurrence_freq, start, rangeStart)
     for (let count = 0; count < MAX_OCCURRENCES; count++, n++) {
       const occStart = stepper(start, n)
       const occStartMs = occStart.getTime()
       if (occStartMs > winEnd || occStartMs > until) break
+      const key = occStart.toISOString()
+      if (overrides[key]) continue // moved — handled in the overrides pass
       const occEndMs = occStartMs + duration
       if (occEndMs <= winStart) continue // entirely before the window
-      out.push({
-        ...ev,
-        start_at: occStart.toISOString(),
-        end_at: new Date(occEndMs).toISOString(),
-        series_start_at: ev.start_at,
-        series_end_at: ev.end_at,
-        instanceKey: `${ev.id}#${occStartMs}`,
-        is_recurring_instance: true,
-      })
+      out.push(makeOccurrence(ev, key, key, new Date(occEndMs).toISOString()))
+    }
+
+    // Moved occurrences: place each at its new time if it touches the window.
+    for (const [key, ov] of Object.entries(overrides)) {
+      const ovStartMs = new Date(ov.start_at).getTime()
+      const ovEndMs = new Date(ov.end_at).getTime()
+      if (ovStartMs >= winEnd || ovEndMs <= winStart) continue
+      out.push(makeOccurrence(ev, key, ov.start_at, ov.end_at))
     }
   }
 
   return out
+}
+
+// Build one concrete occurrence of a recurring series. `occurrenceKey` is the
+// occurrence's original start instant — stable across moves — so a drag always
+// targets the same override entry no matter where the occurrence has been moved.
+function makeOccurrence(ev, occurrenceKey, startISO, endISO) {
+  return {
+    ...ev,
+    start_at: startISO,
+    end_at: endISO,
+    series_start_at: ev.start_at,
+    series_end_at: ev.end_at,
+    occurrenceKey,
+    instanceKey: `${ev.id}#${occurrenceKey}`,
+    is_recurring_instance: true,
+  }
 }
