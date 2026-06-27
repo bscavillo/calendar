@@ -80,12 +80,12 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
       <div className={MODAL}>
         <div className="mb-3.5 h-1.5 w-[60px] rounded-sm" style={{ background: eventColor(event, userId) }} />
         <h2 className="text-xl font-semibold">{event.title}</h2>
-        <p className="mt-1 text-muted">
+        <p className="mt-1">
           {event.is_shared ? 'Shared' : ownerName}
         </p>
         <dl className="mt-4">
           <div className="mb-3">
-            <dt className="text-xl font-semibold">When</dt>
+            <dt className="text-lg font-bold">When</dt>
             <dd className="mt-0.5 text-base">
               {event.all_day ? (
                 formatDateInZone(start, myTz) + ' · All day'
@@ -111,7 +111,7 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
           </div>
           {event.recurrence_freq && (
             <div className="mb-3">
-              <dt className="text-xs font-bold tracking-wide text-muted uppercase">Repeats</dt>
+              <dt className="text-lg font-bold">Repeats</dt>
               <dd className="mt-0.5 text-base">
                 {recurrenceLabel(event)}
                 {event.recurrence_until && ` · until ${formatDateInZone(parseISO(event.recurrence_until), myTz)}`}
@@ -119,10 +119,10 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
             </div>
           )}
           {event.location && (
-            <div className="mb-3"><dt className="text-xs font-bold tracking-wide text-muted uppercase">Where</dt><dd className="mt-0.5 text-base">{event.location}</dd></div>
+            <div className="mb-3"><dt className="text-lg font-bold">Where</dt><dd className="mt-0.5 text-base">{event.location}</dd></div>
           )}
           {event.description && (
-            <div className="mb-3"><dt className="text-xs font-bold tracking-wide text-muted uppercase">Notes</dt><dd className="mt-0.5 text-base">{event.description}</dd></div>
+            <div className="mb-3"><dt className="text-lg font-bold">Notes</dt><dd className="mt-0.5 text-base">{event.description}</dd></div>
           )}
         </dl>
         <div className="mt-5 flex justify-end gap-2.5">
