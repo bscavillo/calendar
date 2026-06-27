@@ -20,10 +20,18 @@ const REMIND_OPTIONS = [
   { value: '1440', label: '1 day before' },
 ]
 
-function defaultTimes(date) {
-  const base = setHours(date, Math.max(new Date().getHours() + 1, 9))
-  const start = new Date(base)
-  start.setMinutes(0, 0, 0)
+// When the user clicked a specific slot in the week/day grid (atTime), start at
+// exactly that time. Otherwise (month-cell click or the New-event button) fall
+// back to the next whole hour, no earlier than 9am.
+function defaultTimes(date, atTime) {
+  let start
+  if (atTime) {
+    start = new Date(date)
+    start.setSeconds(0, 0)
+  } else {
+    start = setHours(date, Math.max(new Date().getHours() + 1, 9))
+    start.setMinutes(0, 0, 0)
+  }
   return { start, end: addHours(start, 1) }
 }
 
@@ -135,7 +143,7 @@ function FormMode({ initial, session, onClose }) {
   const srcStart = editing ? ev.series_start_at || ev.start_at : null
   const srcEnd = editing ? ev.series_end_at || ev.end_at : null
   const baseDate = editing ? parseISO(srcStart) : (initial.date || new Date())
-  const times = defaultTimes(baseDate)
+  const times = defaultTimes(baseDate, !editing && initial.atTime)
 
   const [title, setTitle] = useState(editing ? ev.title : '')
   const [description, setDescription] = useState(editing ? ev.description || '' : '')

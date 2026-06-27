@@ -289,7 +289,7 @@ export default function CalendarView({ session }) {
           userId={userId}
           profiles={profiles}
           onSelectEvent={(ev) => setModal({ mode: 'view', event: ev })}
-          onSelectSlot={(date) => setModal({ mode: 'create', date })}
+          onSelectSlot={(date) => setModal({ mode: 'create', date, atTime: true })}
           onMoveEvent={handleMoveEvent}
         />
       )}
