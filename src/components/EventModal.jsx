@@ -85,7 +85,7 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
         </p>
         <dl className="mt-4">
           <div className="mb-3">
-            <dt className="text-xs font-bold tracking-wide text-muted uppercase">When</dt>
+            <dt className="text-xl font-semibold">When</dt>
             <dd className="mt-0.5 text-base">
               {event.all_day ? (
                 formatDateInZone(start, myTz) + ' · All day'
@@ -100,7 +100,7 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
                       {formatDateInZone(start, partnerTz)} ·{' '}
                       {formatTimeInZone(start, partnerTz)} –{' '}
                       {formatTimeInZone(end, partnerTz)}
-                      <span className="text-[0.72rem] font-bold tracking-wide text-muted uppercase">
+                      <span>
                         {partner.display_name || zoneCity(partnerTz)}&rsquo;s time
                       </span>
                     </div>
