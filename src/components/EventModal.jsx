@@ -185,11 +185,16 @@ function FormMode({ initial, session, onClose }) {
         start_at = `${dateStr}T12:00:00.000Z`
         end_at = `${dateStr}T12:00:00.000Z`
       } else {
-        start_at = new Date(`${dateStr}T${startTime}`).toISOString()
-        end_at = new Date(`${dateStr}T${endTime}`).toISOString()
-        if (new Date(end_at) <= new Date(start_at)) {
-          throw new Error('End time must be after start time.')
+        const startDate = new Date(`${dateStr}T${startTime}`)
+        let endDate = new Date(`${dateStr}T${endTime}`)
+        // An end at or before the start means the event runs past midnight, so
+        // it ends the next day (e.g. 23:00–01:00). The week/day and month views
+        // already clip spanning events into each day they touch.
+        if (endDate <= startDate) {
+          endDate = new Date(endDate.getTime() + 24 * 60 * 60 * 1000)
         }
+        start_at = startDate.toISOString()
+        end_at = endDate.toISOString()
       }
       if (repeats && recurUntil && recurUntil < dateStr) {
         throw new Error('The repeat end date must be on or after the start date.')
