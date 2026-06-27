@@ -305,13 +305,16 @@ function minutesToLabel(min) {
   return `${h}:${m}`
 }
 
-// Clicking an empty part of a day column opens the new-event form at that hour.
+// Clicking an empty part of a day column opens the new-event form, starting at
+// the nearest 15-minute mark to where the pointer landed.
 function handleColumnClick(e, day, onSelectSlot, hourHeight) {
   const rect = e.currentTarget.getBoundingClientRect()
   const y = e.clientY - rect.top
-  const hour = Math.min(23, Math.max(0, Math.floor(y / hourHeight)))
+  const raw = (y / hourHeight) * 60
+  // Snap to the nearest quarter hour, clamped to the day (last slot 23:45).
+  const startMin = Math.max(0, Math.min(Math.round(raw / SNAP_MIN) * SNAP_MIN, 24 * 60 - SNAP_MIN))
   const d = new Date(day)
-  d.setHours(hour, 0, 0, 0)
+  d.setHours(0, startMin, 0, 0)
   onSelectSlot(d)
 }
 
