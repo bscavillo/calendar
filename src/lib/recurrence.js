@@ -65,7 +65,10 @@ const MAX_OCCURRENCES = 750
 // A single occurrence can be moved (e.g. dragged in the week view) without
 // disturbing the rest of the series: the master's `overrides` map, keyed by the
 // occurrence's original start instant (`occurrenceKey`), supplies replacement
-// `start_at`/`end_at` for just that one occurrence.
+// `start_at`/`end_at` for just that one occurrence. An override of the form
+// `{ cancelled: true }` instead removes that one occurrence entirely — used when
+// a single occurrence is deleted, or "dissolved" out into its own standalone
+// event, so the series no longer generates it.
 export function expandEvents(rows, rangeStart, rangeEnd) {
   const winStart = rangeStart.getTime()
   const winEnd = rangeEnd.getTime()
@@ -101,7 +104,10 @@ export function expandEvents(rows, rangeStart, rangeEnd) {
     }
 
     // Moved occurrences: place each at its new time if it touches the window.
+    // Cancelled occurrences are simply dropped (skipped in the regular pass
+    // above via the `overrides[key]` guard, and not re-emitted here).
     for (const [key, ov] of Object.entries(overrides)) {
+      if (!ov || ov.cancelled) continue
       const ovStartMs = new Date(ov.start_at).getTime()
       const ovEndMs = new Date(ov.end_at).getTime()
       if (ovStartMs >= winEnd || ovEndMs <= winStart) continue

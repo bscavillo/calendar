@@ -48,20 +48,38 @@ export default function EventModal({ session, profiles, initial, onClose }) {
 
 function ViewMode({ event, userId, profiles, onClose, session }) {
   const [editing, setEditing] = useState(false)
+  // A repeating occurrence can be deleted on its own (just this one) or with the
+  // whole series; that choice is offered inline instead of a browser confirm.
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const ownerName = event.owner_id === userId ? 'You' : (profiles[event.owner_id]?.display_name || 'Partner')
 
   if (editing) {
     return <FormMode initial={{ mode: 'edit', event }} session={session} onClose={onClose} />
   }
 
-  async function handleDelete() {
-    const prompt = event.recurrence_freq
-      ? 'Delete this repeating event and all its occurrences?'
-      : 'Delete this event?'
-    if (!confirm(prompt)) return
+  async function deleteSeries() {
     const { error } = await supabase.from('events').delete().eq('id', event.id)
     if (error) alert(error.message)
     else onClose()
+  }
+
+  // Remove a single occurrence by marking it cancelled in the master's overrides,
+  // leaving the rest of the series in place.
+  async function deleteOccurrence() {
+    const occKey = event.occurrenceKey || event.series_start_at
+    const nextOverrides = { ...(event.overrides || {}), [occKey]: { cancelled: true } }
+    const { error } = await supabase.from('events').update({ overrides: nextOverrides }).eq('id', event.id)
+    if (error) alert(error.message)
+    else onClose()
+  }
+
+  async function handleDelete() {
+    if (event.is_recurring_instance) {
+      setConfirmDelete(true) // repeating: let the user pick occurrence vs series
+      return
+    }
+    if (!confirm('Delete this event?')) return
+    await deleteSeries()
   }
 
   const start = parseISO(event.start_at)
@@ -125,11 +143,22 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
             <div className="mb-3"><dt className="text-lg font-bold">Notes</dt><dd className="mt-0.5 text-base">{event.description}</dd></div>
           )}
         </dl>
-        <div className="mt-5 flex justify-end gap-2.5">
-          <button className="btn btn-ghost" onClick={onClose}>Close</button>
-          <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
-          <button className="btn btn-primary" onClick={() => setEditing(true)}>Edit</button>
-        </div>
+        {confirmDelete ? (
+          <div className="mt-5">
+            <p className="text-sm font-semibold text-ink">This event repeats — delete which?</p>
+            <div className="mt-2.5 flex flex-wrap justify-end gap-2.5">
+              <button className="btn btn-ghost" onClick={() => setConfirmDelete(false)}>Cancel</button>
+              <button className="btn btn-danger" onClick={deleteOccurrence}>Just this one</button>
+              <button className="btn btn-danger" onClick={deleteSeries}>Entire series</button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-5 flex justify-end gap-2.5">
+            <button className="btn btn-ghost" onClick={onClose}>Close</button>
+            <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
+            <button className="btn btn-primary" onClick={() => setEditing(true)}>Edit</button>
+          </div>
+        )}
       </div>
     </Backdrop>
   )
@@ -169,6 +198,32 @@ function FormMode({ initial, session, onClose }) {
   )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+
+  // Editing one occurrence of a repeating series? Then offer a scope choice:
+  // change the whole series, or "dissolve" just this occurrence out into its own
+  // standalone event that no longer follows the schedule.
+  const isRecurringOccurrence = editing && !!ev?.recurrence_freq
+  const [scope, setScope] = useState('series') // 'series' | 'single'
+
+  // Reseed the date/time fields from an instant pair. Switching scope re-points
+  // them: "entire series" edits the series anchor (its first occurrence), while
+  // "this occurrence" starts from this occurrence's own date and time.
+  function seedTimes(startISO, endISO, allDayFlag) {
+    if (allDayFlag) {
+      setDateStr(String(startISO).slice(0, 10))
+      return
+    }
+    setDateStr(format(parseISO(startISO), 'yyyy-MM-dd'))
+    setStartTime(format(parseISO(startISO), 'HH:mm'))
+    setEndTime(format(parseISO(endISO), 'HH:mm'))
+  }
+
+  function changeScope(next) {
+    setScope(next)
+    if (!isRecurringOccurrence) return
+    if (next === 'single') seedTimes(ev.start_at, ev.end_at, ev.all_day)
+    else seedTimes(srcStart, srcEnd, ev.all_day)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -211,16 +266,39 @@ function FormMode({ initial, session, onClose }) {
         recurrence_freq: repeats ? recurFreq : null,
         recurrence_until: repeats && recurUntil ? recurUntil : null,
       }
+      // "This occurrence" — dissolve just this one out of the series: create an
+      // independent, non-repeating event carrying the (possibly edited) values,
+      // and mark the original occurrence cancelled so the series stops
+      // generating it. Everything else about the series is left untouched.
+      if (isRecurringOccurrence && scope === 'single') {
+        const occKey = ev.occurrenceKey || ev.series_start_at
+        const { error: insErr } = await supabase
+          .from('events')
+          .insert({ ...payload, recurrence_freq: null, recurrence_until: null, overrides: null, owner_id: session.user.id })
+        if (insErr) throw insErr
+        const nextOverrides = { ...(ev.overrides || {}), [occKey]: { cancelled: true } }
+        const { error: updErr } = await supabase.from('events').update({ overrides: nextOverrides }).eq('id', ev.id)
+        if (updErr) throw updErr
+        onClose()
+        return
+      }
       // Editing a recurring series re-times every occurrence, so any single
       // occurrences that were dragged elsewhere no longer line up — drop those
-      // overrides rather than leave them stranded at their old offsets.
+      // time overrides. Cancellations (dissolved/deleted occurrences) are kept
+      // so they don't come back.
       if (editing && ev.recurrence_freq) {
         const timingChanged =
           start_at !== ev.series_start_at ||
           end_at !== ev.series_end_at ||
           payload.recurrence_freq !== ev.recurrence_freq ||
           (payload.recurrence_until || null) !== (ev.recurrence_until ? String(ev.recurrence_until).slice(0, 10) : null)
-        if (timingChanged) payload.overrides = null
+        if (timingChanged) {
+          const kept = {}
+          for (const [k, ov] of Object.entries(ev.overrides || {})) {
+            if (ov && ov.cancelled) kept[k] = ov
+          }
+          payload.overrides = Object.keys(kept).length ? kept : null
+        }
       }
       if (editing) {
         const { error } = await supabase.from('events').update(payload).eq('id', ev.id)
@@ -243,8 +321,18 @@ function FormMode({ initial, session, onClose }) {
     <Backdrop onClose={onClose}>
       <form className={MODAL} onSubmit={handleSubmit}>
         <h2 className="text-xl font-semibold">{editing ? 'Edit event' : 'New event'}</h2>
-        {editing && ev.recurrence_freq && (
-          <p className="mt-1 text-sm text-muted">Changes apply to the whole repeating series.</p>
+        {isRecurringOccurrence && (
+          <fieldset className="mt-3 rounded-sm bg-canvas p-3">
+            <legend className="px-1 text-xs font-semibold text-muted">This event repeats — apply changes to</legend>
+            <label className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <input type="radio" name="scope" className="h-4 w-4" checked={scope === 'series'} onChange={() => changeScope('series')} />
+              The entire series
+            </label>
+            <label className="mt-1.5 flex items-center gap-2 text-sm font-semibold text-ink">
+              <input type="radio" name="scope" className="h-4 w-4" checked={scope === 'single'} onChange={() => changeScope('single')} />
+              This event only — detach it from the schedule
+            </label>
+          </fieldset>
         )}
 
         <label className="field-label">
@@ -275,12 +363,14 @@ function FormMode({ initial, session, onClose }) {
           </div>
         )}
 
-        <label className="mt-3.5 flex items-center gap-2 font-semibold text-ink">
-          <input type="checkbox" className="h-4 w-4" checked={repeats} onChange={(e) => setRepeats(e.target.checked)} />
-          Repeats
-        </label>
+        {scope !== 'single' && (
+          <label className="mt-3.5 flex items-center gap-2 font-semibold text-ink">
+            <input type="checkbox" className="h-4 w-4" checked={repeats} onChange={(e) => setRepeats(e.target.checked)} />
+            Repeats
+          </label>
+        )}
 
-        {repeats && (
+        {scope !== 'single' && repeats && (
           <>
             <div className="flex gap-3">
               <label className="field-label flex-1">
