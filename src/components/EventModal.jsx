@@ -429,10 +429,21 @@ function FormMode({ initial, session, onClose }) {
 
 function Backdrop({ children, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-3 backdrop-blur-sm sm:p-5" onClick={onClose}>
+    // Padding uses max(gap, safe-area inset) so the dialog never tucks under a
+    // notch or the home indicator on iPhones (the fixed overlay spans the whole
+    // screen, ignoring the body's safe-area padding).
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-ink/40 backdrop-blur-sm"
+      style={{ padding: SAFE_PAD }}
+      onClick={onClose}
+    >
       <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>{children}</div>
     </div>
   )
 }
 
-const MODAL = 'relative max-h-[90vh] w-full overflow-y-auto rounded-sm bg-surface p-5 shadow-[0_20px_60px_rgba(63,58,71,0.3)] sm:p-7'
+// Safe-area-aware overlay padding, shared by the modals.
+export const SAFE_PAD =
+  'max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left))'
+
+const MODAL = 'relative max-h-[90dvh] w-full overflow-y-auto rounded-sm bg-surface p-5 shadow-[0_20px_60px_rgba(63,58,71,0.3)] sm:p-7'

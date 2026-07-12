@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { SAFE_PAD } from './EventModal'
 
 export default function SettingsModal({ session, profile, onClose }) {
   const [displayName, setDisplayName] = useState(profile?.display_name || '')
@@ -27,9 +28,9 @@ export default function SettingsModal({ session, profile, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-3 backdrop-blur-sm sm:p-5" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 backdrop-blur-sm" style={{ padding: SAFE_PAD }} onClick={onClose}>
       <form
-        className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-sm bg-surface p-5 shadow-[0_20px_60px_rgba(63,58,71,0.3)] sm:p-7"
+        className="relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-sm bg-surface p-5 shadow-[0_20px_60px_rgba(63,58,71,0.3)] sm:p-7"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
       >

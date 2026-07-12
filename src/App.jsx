@@ -27,7 +27,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center p-6">
+      <div className="grid min-h-[100dvh] place-items-center p-6">
         <div className="h-9 w-9 animate-spin rounded-full border-4 border-accent/40 border-t-accent-strong" />
       </div>
     )

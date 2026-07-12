@@ -1,6 +1,6 @@
 export default function SetupNotice() {
   return (
-    <div className="grid min-h-screen place-items-center p-4 sm:p-6">
+    <div className="grid min-h-[100dvh] place-items-center p-4 sm:p-6">
       <div className="w-full max-w-lg rounded-sm bg-surface p-6 shadow-[0_8px_30px_rgba(120,110,160,0.12)] sm:p-8">
         <h1 className="text-2xl font-semibold">Calendar</h1>
         <p className="mt-2">Almost there — the app just needs to be connected to your free Supabase project.</p>

@@ -41,9 +41,25 @@
     margin: 0;
     background: var(--color-canvas);
     color: var(--color-ink);
+    /* Keep content clear of the notch / Dynamic Island / home indicator on
+       modern iPhones (works with viewport-fit=cover); 0 on devices without
+       insets. Also stop stray sideways scrolling and iOS text inflation. */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
   }
   button {
     cursor: pointer;
+  }
+  /* iOS Safari zooms the page in when a focused field's text is under 16px.
+     Bump form controls to 16px on touch devices to prevent that jump; pointer
+     devices keep the denser 14px from the utility classes. */
+  @media (pointer: coarse) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
   }
 }
 

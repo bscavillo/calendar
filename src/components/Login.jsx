@@ -47,7 +47,7 @@ export default function Login() {
 
   if (confirmSent) {
     return (
-      <div className="grid min-h-screen place-items-center p-4 sm:p-6">
+      <div className="grid min-h-[100dvh] place-items-center p-4 sm:p-6">
         <div className="w-full max-w-md rounded-sm bg-surface p-6 shadow-[0_8px_30px_rgba(120,110,160,0.12)] sm:p-8">
           <h1 className="text-2xl font-semibold">Confirm your email</h1>
           <p className="mt-1 text-muted">
@@ -71,7 +71,7 @@ export default function Login() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center p-4 sm:p-6">
+    <div className="grid min-h-[100dvh] place-items-center p-4 sm:p-6">
       <form
         className="w-full max-w-md rounded-sm bg-surface p-6 shadow-[0_8px_30px_rgba(120,110,160,0.12)] sm:p-8"
         onSubmit={handleSubmit}
