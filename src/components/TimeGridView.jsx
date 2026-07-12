@@ -340,7 +340,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
               return (
                 <button
                   key={ev.instanceKey || ev.id}
-                  className={`group absolute flex touch-none flex-col overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-[0.72rem] leading-tight text-white shadow-sm hover:z-[5] hover:brightness-105 ${
+                  className={`absolute flex touch-none flex-col overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-[0.72rem] leading-tight text-white shadow-sm hover:z-[5] hover:brightness-105 ${
                     dragging ? 'opacity-30' : ''
                   }`}
                   style={{
@@ -358,27 +358,23 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
                   }}
                   title={`${ev.title} — ${ownerLabel(ev)}`}
                 >
-                  {/* Drag these thin edge zones to change the event's length; the
-                      short grip only shows on hover so it never clutters. */}
+                  {/* Invisible edge zones for drag-to-resize — no visible hint;
+                      grabbing an event's top or bottom edge is intuitive on its own. */}
                   {isStart && (
                     <div
-                      className="absolute inset-x-0 top-0 z-[2] flex touch-none cursor-ns-resize items-start justify-center"
+                      className="absolute inset-x-0 top-0 z-[2] touch-none cursor-ns-resize"
                       style={{ height: RESIZE_HANDLE }}
                       onPointerDown={(e) => startResize(e, ev, dayIndex, 'top')}
-                    >
-                      <span className="mt-[1px] h-[3px] w-5 rounded-full bg-white/0 group-hover:bg-white/70" />
-                    </div>
+                    />
                   )}
                   <span className="font-bold opacity-90">{format(parseISO(startISO), 'HH:mm')} · {ownerLabel(ev)}</span>
                   <span className="overflow-hidden text-ellipsis whitespace-nowrap">{ev.title}</span>
                   {isEnd && (
                     <div
-                      className="absolute inset-x-0 bottom-0 z-[2] flex touch-none cursor-ns-resize items-end justify-center"
+                      className="absolute inset-x-0 bottom-0 z-[2] touch-none cursor-ns-resize"
                       style={{ height: RESIZE_HANDLE }}
                       onPointerDown={(e) => startResize(e, ev, dayIndex, 'bottom')}
-                    >
-                      <span className="mb-[1px] h-[3px] w-5 rounded-full bg-white/0 group-hover:bg-white/70" />
-                    </div>
+                    />
                   )}
                 </button>
               )
