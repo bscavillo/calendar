@@ -322,17 +322,17 @@ function FormMode({ initial, session, onClose }) {
       <form className={MODAL} onSubmit={handleSubmit}>
         <h2 className="text-xl font-semibold">{editing ? 'Edit event' : 'New event'}</h2>
         {isRecurringOccurrence && (
-          <fieldset className="mt-3 rounded-sm bg-canvas p-3">
-            <legend className="px-1 text-xs font-semibold text-muted">This event repeats — apply changes to</legend>
-            <label className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <div>
+            <span className="field-label">Apply changes to</span>
+            <label className="mt-1.5 flex items-center gap-2 text-sm font-semibold text-ink">
               <input type="radio" name="scope" className="h-4 w-4" checked={scope === 'series'} onChange={() => changeScope('series')} />
               The entire series
             </label>
             <label className="mt-1.5 flex items-center gap-2 text-sm font-semibold text-ink">
               <input type="radio" name="scope" className="h-4 w-4" checked={scope === 'single'} onChange={() => changeScope('single')} />
-              This event only — detach it from the schedule
+              This event only
             </label>
-          </fieldset>
+          </div>
         )}
 
         <label className="field-label">
