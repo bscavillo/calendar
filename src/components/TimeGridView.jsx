@@ -4,8 +4,9 @@ import { eventColor } from '../lib/eventColor'
 
 const MIN_HOUR_HEIGHT = 48 // px per hour (short screens / minimum)
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
-const SNAP_MIN = 15 // dragged events snap to a 15-minute grid
+const SNAP_MIN = 15 // dragged/resized events snap to a 15-minute grid
 const DRAG_THRESHOLD = 4 // px of movement before a press counts as a drag (vs a click)
+const RESIZE_HANDLE = 8 // px-tall grab zone at an event's top and bottom edge
 const DAY_MS = 24 * 60 * 60 * 1000
 
 // A scrollable hour-by-hour grid used by both the week view (7 day columns)
@@ -123,7 +124,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
       startMin = Math.max(0, Math.min(startMin, 24 * 60 - drag.durationMin))
       drag.dayIndex = idx
       drag.startMin = startMin
-      setDrag({ dayIndex: idx, startMin, durationMin: drag.durationMin })
+      setDrag({ dayIndex: idx, startMin, durationMin: drag.durationMin, mode: 'move' })
     }
 
     const finish = (commit) => {
@@ -143,6 +144,79 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
       setTimeout(() => (justDraggedRef.current = false), 0) // …but only that one click
       setOptimistic({ key: drag.key, start_at: startISO, end_at: endISO })
       Promise.resolve(onMoveEvent?.(drag.ev, startISO, endISO)).catch(() => setOptimistic(null))
+    }
+    const onUp = () => finish(true)
+    const onCancel = () => finish(false)
+
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onCancel)
+  }
+
+  // Begin a resize by pressing an event's top or bottom edge. The opposite edge
+  // holds still while the grabbed edge follows the pointer, snapped to the
+  // 15-minute grid and kept at least one slot tall. On release the new
+  // start/end go to onMoveEvent — which, for a recurring occurrence, records a
+  // per-occurrence override exactly like a move, so the rest of the series stays.
+  function startResize(e, ev, dayIndex, edge) {
+    if (e.button != null && e.button !== 0) return // left button / touch only
+    e.stopPropagation() // don't also start a move on the event body
+    const base = startOfDay(days[dayIndex]).getTime()
+    // Edge minutes within this day column, clamped to it. For an event that
+    // spans midnight only the edge that truly falls in this day is grabbable
+    // (see isStart/isEnd below), so these clamps never fight a cross-day edge.
+    const d = {
+      ev,
+      key: ev.instanceKey || ev.id,
+      color: eventColor(ev, userId),
+      edge, // 'top' | 'bottom'
+      dayIndex,
+      startMin: Math.max(0, (parseISO(ev.start_at).getTime() - base) / 60000),
+      endMin: Math.min(24 * 60, (parseISO(ev.end_at).getTime() - base) / 60000),
+      startClientY: e.clientY,
+      started: false,
+      mode: 'resize',
+    }
+    dragRef.current = d
+    justDraggedRef.current = false
+
+    const onMove = (me) => {
+      const drag = dragRef.current
+      if (!drag) return
+      if (!drag.started) {
+        if (Math.abs(me.clientY - drag.startClientY) < DRAG_THRESHOLD) return
+        drag.started = true
+      }
+      me.preventDefault()
+      const r = colRefs.current[drag.dayIndex]?.getBoundingClientRect()
+      if (!r) return
+      const raw = ((me.clientY - r.top) / hourHeight) * 60
+      const snapped = Math.max(0, Math.min(Math.round(raw / SNAP_MIN) * SNAP_MIN, 24 * 60))
+      if (drag.edge === 'top') drag.startMin = Math.max(0, Math.min(snapped, drag.endMin - SNAP_MIN))
+      else drag.endMin = Math.min(24 * 60, Math.max(snapped, drag.startMin + SNAP_MIN))
+      setDrag({ dayIndex: drag.dayIndex, startMin: drag.startMin, durationMin: drag.endMin - drag.startMin, mode: 'resize' })
+    }
+
+    const finish = (commit) => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+      const drag = dragRef.current
+      dragRef.current = null
+      setDrag(null)
+      if (!drag || !drag.started) return // a tap, not a drag → let the click open it
+      if (!commit) return
+      // The un-dragged edge keeps the event's original instant (which may lie on
+      // an adjacent day for a spanning event); only the grabbed edge is recut
+      // from the snapped minute within this day.
+      const startISO =
+        drag.edge === 'top' ? new Date(base + drag.startMin * 60000).toISOString() : ev.start_at
+      const endISO =
+        drag.edge === 'bottom' ? new Date(base + drag.endMin * 60000).toISOString() : ev.end_at
+      justDraggedRef.current = true
+      setTimeout(() => (justDraggedRef.current = false), 0)
+      setOptimistic({ key: drag.key, start_at: startISO, end_at: endISO })
+      Promise.resolve(onMoveEvent?.(ev, startISO, endISO)).catch(() => setOptimistic(null))
     }
     const onUp = () => finish(true)
     const onCancel = () => finish(false)
@@ -173,7 +247,17 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
         } else {
           const cs = Math.max(s, dayStart)
           const ce = Math.min(e, dayEnd)
-          timed.push({ ev, startISO, top: minutesFrom(dayStart, cs), height: Math.max((ce - cs) / 60000, 20) })
+          // isStart/isEnd mark whether the event's real start/end fall in this
+          // day, so a spanning event only shows the resize handle for the edge
+          // that actually lives here.
+          timed.push({
+            ev,
+            startISO,
+            top: minutesFrom(dayStart, cs),
+            height: Math.max((ce - cs) / 60000, 20),
+            isStart: s >= dayStart,
+            isEnd: e <= dayEnd,
+          })
         }
       }
       return { day, allDay, timed: layout(timed) }
@@ -251,12 +335,12 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
             {HOURS.map((h) => (
               <div key={h} className="pointer-events-none absolute right-0 left-0 border-t border-line" style={{ top: h * hourHeight }} />
             ))}
-            {timed.map(({ ev, startISO, top, height, lane, lanes }) => {
+            {timed.map(({ ev, startISO, top, height, lane, lanes, isStart, isEnd }) => {
               const dragging = drag && (ev.instanceKey || ev.id) === dragRef.current?.key
               return (
                 <button
                   key={ev.instanceKey || ev.id}
-                  className={`absolute flex touch-none flex-col overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-[0.72rem] leading-tight text-white shadow-sm hover:z-[5] hover:brightness-105 ${
+                  className={`group absolute flex touch-none flex-col overflow-hidden rounded-sm px-1.5 py-0.5 text-left text-[0.72rem] leading-tight text-white shadow-sm hover:z-[5] hover:brightness-105 ${
                     dragging ? 'opacity-30' : ''
                   }`}
                   style={{
@@ -274,8 +358,28 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
                   }}
                   title={`${ev.title} — ${ownerLabel(ev)}`}
                 >
+                  {/* Drag these thin edge zones to change the event's length; the
+                      short grip only shows on hover so it never clutters. */}
+                  {isStart && (
+                    <div
+                      className="absolute inset-x-0 top-0 z-[2] flex touch-none cursor-ns-resize items-start justify-center"
+                      style={{ height: RESIZE_HANDLE }}
+                      onPointerDown={(e) => startResize(e, ev, dayIndex, 'top')}
+                    >
+                      <span className="mt-[1px] h-[3px] w-5 rounded-full bg-white/0 group-hover:bg-white/70" />
+                    </div>
+                  )}
                   <span className="font-bold opacity-90">{format(parseISO(startISO), 'HH:mm')} · {ownerLabel(ev)}</span>
                   <span className="overflow-hidden text-ellipsis whitespace-nowrap">{ev.title}</span>
+                  {isEnd && (
+                    <div
+                      className="absolute inset-x-0 bottom-0 z-[2] flex touch-none cursor-ns-resize items-end justify-center"
+                      style={{ height: RESIZE_HANDLE }}
+                      onPointerDown={(e) => startResize(e, ev, dayIndex, 'bottom')}
+                    >
+                      <span className="mb-[1px] h-[3px] w-5 rounded-full bg-white/0 group-hover:bg-white/70" />
+                    </div>
+                  )}
                 </button>
               )
             })}
@@ -288,7 +392,10 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
                   background: dragRef.current?.color,
                 }}
               >
-                <span className="font-bold">{minutesToLabel(drag.startMin)}</span>
+                <span className="font-bold">
+                  {minutesToLabel(drag.startMin)}
+                  {drag.mode === 'resize' && ` – ${minutesToLabel(drag.startMin + drag.durationMin)}`}
+                </span>
               </div>
             )}
           </div>
