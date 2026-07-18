@@ -1,11 +1,15 @@
-// An event's color is derived from whose it is — it is not user-pickable.
-// Shared events are pink; your own events are blue; the partner's are purple.
-// These mirror the `shared` / `mine` / `partner` palette tokens in index.css.
+// An event's color is derived from whose it is — and it is NOT viewer-relative,
+// so both people see the same person in the same color. Shared events are pink;
+// the primary user (the first of you to sign up) is blue; the other user is
+// purple. These mirror the `shared` / `primary` / `secondary` palette tokens in
+// index.css.
 const SHARED = '#e7a8cd' // pastel pink
-const MINE = '#9fbef0' // pastel blue
-const PARTNER = '#a99ce6' // pastel purple
+const PRIMARY = '#9fbef0' // pastel blue
+const SECONDARY = '#a99ce6' // pastel purple
 
-export function eventColor(ev, userId) {
+// `primaryUserId` is the user who is always shown in blue (see primaryUserId in
+// useProfiles) — the same for everyone, regardless of who is logged in.
+export function eventColor(ev, primaryUserId) {
   if (ev.is_shared) return SHARED
-  return ev.owner_id === userId ? MINE : PARTNER
+  return ev.owner_id === primaryUserId ? PRIMARY : SECONDARY
 }

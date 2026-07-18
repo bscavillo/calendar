@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 // Loads every profile (there are only two of you) keyed by user id, and keeps
@@ -10,7 +10,7 @@ export function useProfiles() {
   const fetchProfiles = useCallback(async () => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, display_name, timezone')
+      .select('id, display_name, timezone, created_at')
     if (data) {
       const map = {}
       for (const p of data) map[p.id] = p
@@ -35,5 +35,21 @@ export function useProfiles() {
     }
   }, [fetchProfiles])
 
-  return { profiles, loading, refetch: fetchProfiles }
+  // The "primary" user is shown in blue for everyone; the other user is
+  // purple. We pick the account that signed up first (created_at, with the id
+  // as a stable tie-break) so the choice is the same for both viewers and
+  // needs no configuration. See eventColor().
+  const primaryUserId = useMemo(() => {
+    const list = Object.values(profiles)
+    if (list.length === 0) return null
+    list.sort((a, b) => {
+      const ta = a.created_at || ''
+      const tb = b.created_at || ''
+      if (ta !== tb) return ta < tb ? -1 : 1
+      return a.id < b.id ? -1 : 1
+    })
+    return list[0].id
+  }, [profiles])
+
+  return { profiles, primaryUserId, loading, refetch: fetchProfiles }
 }

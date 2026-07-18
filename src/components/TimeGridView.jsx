@@ -14,7 +14,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 // day-name header sticks to the top, the time gutter sticks to the left, and on
 // narrow screens the week's columns keep a minimum width so the grid scrolls
 // horizontally instead of squashing.
-export default function TimeGridView({ days, events, userId, profiles, onSelectEvent, onSelectSlot, onMoveEvent }) {
+export default function TimeGridView({ days, events, userId, primaryUserId, profiles, onSelectEvent, onSelectSlot, onMoveEvent }) {
   const scrollRef = useRef(null)
   const headRef = useRef(null)
   const allDayRef = useRef(null)
@@ -81,7 +81,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
     const d = {
       ev,
       key: ev.instanceKey || ev.id,
-      color: eventColor(ev, userId),
+      color: eventColor(ev, primaryUserId),
       durationMs,
       durationMin: durationMs / 60000,
       grabOffsetY: e.clientY - rect.top, // keep the grabbed point under the cursor
@@ -168,7 +168,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
     const d = {
       ev,
       key: ev.instanceKey || ev.id,
-      color: eventColor(ev, userId),
+      color: eventColor(ev, primaryUserId),
       edge, // 'top' | 'bottom'
       dayIndex,
       startMin: Math.max(0, (parseISO(ev.start_at).getTime() - base) / 60000),
@@ -300,7 +300,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
               <button
                 key={ev.instanceKey || ev.id}
                 className="chip"
-                style={{ background: eventColor(ev, userId) }}
+                style={{ background: eventColor(ev, primaryUserId) }}
                 onClick={() => onSelectEvent(ev)}
                 title={`${ev.title} — ${ownerLabel(ev)}`}
               >
@@ -348,7 +348,7 @@ export default function TimeGridView({ days, events, userId, profiles, onSelectE
                     height: (height / 60) * hourHeight - 2,
                     left: `calc(${(lane / lanes) * 100}% + 2px)`,
                     width: `calc(${100 / lanes}% - 4px)`,
-                    background: eventColor(ev, userId),
+                    background: eventColor(ev, primaryUserId),
                   }}
                   onPointerDown={(e) => startDrag(e, ev, dayIndex, top)}
                   onClick={(e) => {

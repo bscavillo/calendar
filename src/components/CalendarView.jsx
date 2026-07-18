@@ -47,7 +47,7 @@ export default function CalendarView({ session }) {
   const userId = session.user.id
   const [cursor, setCursor] = useState(new Date())
   const [view, setView] = useState('week')
-  const { profiles } = useProfiles()
+  const { profiles, primaryUserId } = useProfiles()
   const [modal, setModal] = useState(null) // { mode, event?, date? } or null
   const [showSettings, setShowSettings] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -263,7 +263,7 @@ export default function CalendarView({ session }) {
                       <button
                         key={ev.instanceKey || ev.id}
                         className="chip"
-                        style={{ background: eventColor(ev, userId) }}
+                        style={{ background: eventColor(ev, primaryUserId) }}
                         onClick={(e) => {
                           e.stopPropagation()
                           setModal({ mode: 'view', event: ev })
@@ -287,6 +287,7 @@ export default function CalendarView({ session }) {
           days={days}
           events={events}
           userId={userId}
+          primaryUserId={primaryUserId}
           profiles={profiles}
           onSelectEvent={(ev) => setModal({ mode: 'view', event: ev })}
           onSelectSlot={(date) => setModal({ mode: 'create', date, atTime: true })}
@@ -300,6 +301,7 @@ export default function CalendarView({ session }) {
         <EventModal
           session={session}
           profiles={profiles}
+          primaryUserId={primaryUserId}
           initial={modal}
           onClose={() => setModal(null)}
         />

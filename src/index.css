@@ -12,10 +12,10 @@
   --color-accent-strong: #8b7bd4;
 
   /* Per-person event palette (applied inline via lib/eventColor.js). */
-  --color-partner: #a99ce6;        /* pastel purple — partner's events */
-  --color-partner-strong: #8b7bd4;
-  --color-mine: #9fbef0;     /* pastel blue — your events */
-  --color-mine-strong: #7ba0e0;
+  --color-secondary: #a99ce6;        /* pastel purple — the other user's events */
+  --color-secondary-strong: #8b7bd4;
+  --color-primary: #9fbef0;     /* pastel blue — the primary user's events */
+  --color-primary-strong: #7ba0e0;
   --color-shared: #e7a8cd;      /* pastel pink — shared events */
   --color-shared-strong: #d889b8;
   --color-brown: #c2a892;       /* pastel brown — neutral accent */

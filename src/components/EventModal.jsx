@@ -35,7 +35,7 @@ function defaultTimes(date, atTime) {
   return { start, end: addHours(start, 1) }
 }
 
-export default function EventModal({ session, profiles, initial, onClose }) {
+export default function EventModal({ session, profiles, primaryUserId, initial, onClose }) {
   const userId = session.user.id
   const isView = initial.mode === 'view'
   const event = initial.event
@@ -85,18 +85,18 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
   const start = parseISO(event.start_at)
   const end = parseISO(event.end_at)
 
-  // Show the time in the viewer's own zone, and — when the partner lives in a
-  // different zone — the same instant in theirs, so the alignment is visible.
+  // Show the time in the viewer's own zone, and — when the other user lives in
+  // a different zone — the same instant in theirs, so the alignment is visible.
   const myTz = browserTimeZone()
-  const partner = Object.values(profiles).find((p) => p.id !== userId)
-  const partnerTz = partner?.timezone
-  const showPartnerTime =
-    !event.all_day && partnerTz && partnerTz !== myTz
+  const otherUser = Object.values(profiles).find((p) => p.id !== userId)
+  const otherTz = otherUser?.timezone
+  const showOtherTime =
+    !event.all_day && otherTz && otherTz !== myTz
 
   return (
     <Backdrop onClose={onClose}>
       <div className={MODAL}>
-        <div className="mb-3.5 h-1.5 w-[60px] rounded-sm" style={{ background: eventColor(event, userId) }} />
+        <div className="mb-3.5 h-1.5 w-[60px] rounded-sm" style={{ background: eventColor(event, primaryUserId) }} />
         <h2 className="text-xl font-semibold">{event.title}</h2>
         <p className="mt-1">
           {event.is_shared ? 'Shared' : ownerName}
@@ -113,13 +113,13 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
                     {formatDateInZone(start, myTz)} ·{' '}
                     {formatTimeInZone(start, myTz)} – {formatTimeInZone(end, myTz)}
                   </div>
-                  {showPartnerTime && (
+                  {showOtherTime && (
                     <div className="mt-1 flex flex-wrap items-baseline gap-1.5 text-muted">
-                      {formatDateInZone(start, partnerTz)} ·{' '}
-                      {formatTimeInZone(start, partnerTz)} –{' '}
-                      {formatTimeInZone(end, partnerTz)}
+                      {formatDateInZone(start, otherTz)} ·{' '}
+                      {formatTimeInZone(start, otherTz)} –{' '}
+                      {formatTimeInZone(end, otherTz)}
                       <span>
-                        {partner.display_name || zoneCity(partnerTz)}&rsquo;s time
+                        {otherUser.display_name || zoneCity(otherTz)}&rsquo;s time
                       </span>
                     </div>
                   )}
