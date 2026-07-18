@@ -77,13 +77,13 @@ export default function CalendarView({ session }) {
     requestNotificationPermission()
   }, [])
 
-  // Keep this user's stored zone in sync with their device so the partner always
-  // sees this person's events in the right local time (even after they travel).
-  const myTz = profiles[userId]?.timezone
+  // Keep this user's stored zone in sync with their device so the other user
+  // always sees this person's events in the right local time (even after they travel).
+  const viewerTz = profiles[userId]?.timezone
   useEffect(() => {
     if (!profiles[userId]) return // profile not loaded yet
     const current = browserTimeZone()
-    if (myTz === current) return
+    if (viewerTz === current) return
     supabase
       .from('profiles')
       .update({ timezone: current })
@@ -93,7 +93,7 @@ export default function CalendarView({ session }) {
         // break the calendar; alignment still works via the browser's own zone.
         if (error) console.warn('Could not save timezone:', error.message)
       })
-  }, [userId, myTz, profiles])
+  }, [userId, viewerTz, profiles])
 
   const days = useMemo(
     () => eachDayOfInterval({ start: rangeStart, end: rangeEnd }),
@@ -118,8 +118,8 @@ export default function CalendarView({ session }) {
   // Whose event it is, shown inline on each chip (replaces the color legend).
   function ownerLabel(ev) {
     if (ev.is_shared) return 'Shared'
-    if (ev.owner_id === userId) return myName
-    return profiles[ev.owner_id]?.display_name || 'Partner'
+    if (ev.owner_id === userId) return viewerName
+    return profiles[ev.owner_id]?.display_name || 'Other'
   }
 
   function step(dir) {
@@ -135,7 +135,7 @@ export default function CalendarView({ session }) {
   // Persist a drag-to-move from the week/day grid. Moving a single occurrence of
   // a recurring event records a per-occurrence override (keyed by its original
   // start) so the rest of the series stays put; everything else just shifts the
-  // event's own start/end. Realtime then refreshes the grid for both partners.
+  // event's own start/end. Realtime then refreshes the grid for both users.
   async function handleMoveEvent(ev, startISO, endISO) {
     let patch
     if (ev.is_recurring_instance && ev.recurrence_freq) {
@@ -151,8 +151,8 @@ export default function CalendarView({ session }) {
     }
   }
 
-  const me = profiles[userId]
-  const myName = me?.display_name || session.user.email.split('@')[0]
+  const viewer = profiles[userId]
+  const viewerName = viewer?.display_name || session.user.email.split('@')[0]
 
   return (
     <div className="mx-auto max-w-[1200px] p-3 sm:p-5 min-[1333px]:max-w-[90vw]">
@@ -310,7 +310,7 @@ export default function CalendarView({ session }) {
       {showSettings && (
         <SettingsModal
           session={session}
-          profile={me}
+          profile={viewer}
           onClose={() => setShowSettings(false)}
         />
       )}

@@ -3,7 +3,7 @@
 // Every event is stored as an absolute instant (Postgres `timestamptz`, i.e. a
 // UTC point in time). That means alignment across zones is automatic: whoever
 // views an event sees it rendered in *their own* local zone. These helpers let
-// us also render an instant in a *specific* zone (e.g. the partner's) and label
+// us also render an instant in a *specific* zone (e.g. the other user's) and label
 // times so it's clear which zone a number belongs to.
 
 // The viewer's current IANA zone, e.g. "Europe/Berlin" or "America/New_York".

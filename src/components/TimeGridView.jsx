@@ -67,7 +67,7 @@ export default function TimeGridView({ days, events, userId, primaryUserId, prof
   function ownerLabel(ev) {
     if (ev.is_shared) return 'Shared'
     if (ev.owner_id === userId) return profiles[userId]?.display_name || 'You'
-    return profiles[ev.owner_id]?.display_name || 'Partner'
+    return profiles[ev.owner_id]?.display_name || 'Other'
   }
 
   // Begin a press on a timed event. It only becomes a real drag once the pointer
@@ -94,31 +94,31 @@ export default function TimeGridView({ days, events, userId, primaryUserId, prof
     dragRef.current = d
     justDraggedRef.current = false
 
-    const onMove = (me) => {
+    const onMove = (moveEv) => {
       const drag = dragRef.current
       if (!drag) return
       if (!drag.started) {
         if (
-          Math.abs(me.clientX - drag.startClientX) < DRAG_THRESHOLD &&
-          Math.abs(me.clientY - drag.startClientY) < DRAG_THRESHOLD
+          Math.abs(moveEv.clientX - drag.startClientX) < DRAG_THRESHOLD &&
+          Math.abs(moveEv.clientY - drag.startClientY) < DRAG_THRESHOLD
         )
           return
         drag.started = true
       }
-      me.preventDefault()
+      moveEv.preventDefault()
       // Which day column is the pointer over? Fall back to the current one.
       let idx = drag.dayIndex
       const cols = colRefs.current
       for (let i = 0; i < cols.length; i++) {
         const r = cols[i]?.getBoundingClientRect()
-        if (r && me.clientX >= r.left && me.clientX < r.right) {
+        if (r && moveEv.clientX >= r.left && moveEv.clientX < r.right) {
           idx = i
           break
         }
       }
       const r = cols[idx]?.getBoundingClientRect()
       if (!r) return
-      const localY = me.clientY - r.top - drag.grabOffsetY
+      const localY = moveEv.clientY - r.top - drag.grabOffsetY
       const raw = (localY / hourHeight) * 60
       let startMin = Math.round(raw / SNAP_MIN) * SNAP_MIN
       startMin = Math.max(0, Math.min(startMin, 24 * 60 - drag.durationMin))
@@ -180,17 +180,17 @@ export default function TimeGridView({ days, events, userId, primaryUserId, prof
     dragRef.current = d
     justDraggedRef.current = false
 
-    const onMove = (me) => {
+    const onMove = (moveEv) => {
       const drag = dragRef.current
       if (!drag) return
       if (!drag.started) {
-        if (Math.abs(me.clientY - drag.startClientY) < DRAG_THRESHOLD) return
+        if (Math.abs(moveEv.clientY - drag.startClientY) < DRAG_THRESHOLD) return
         drag.started = true
       }
-      me.preventDefault()
+      moveEv.preventDefault()
       const r = colRefs.current[drag.dayIndex]?.getBoundingClientRect()
       if (!r) return
-      const raw = ((me.clientY - r.top) / hourHeight) * 60
+      const raw = ((moveEv.clientY - r.top) / hourHeight) * 60
       const snapped = Math.max(0, Math.min(Math.round(raw / SNAP_MIN) * SNAP_MIN, 24 * 60))
       if (drag.edge === 'top') drag.startMin = Math.max(0, Math.min(snapped, drag.endMin - SNAP_MIN))
       else drag.endMin = Math.min(24 * 60, Math.max(snapped, drag.startMin + SNAP_MIN))

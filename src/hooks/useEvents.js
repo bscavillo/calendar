@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { expandEvents } from '../lib/recurrence'
 
 // Fetches all events that overlap [rangeStart, rangeEnd) and keeps them
-// live via Supabase realtime so both partners see changes instantly.
+// live via Supabase realtime so both users see changes instantly.
 export function useEvents(rangeStart, rangeEnd) {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)

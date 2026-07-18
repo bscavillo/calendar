@@ -51,7 +51,7 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
   // A repeating occurrence can be deleted on its own (just this one) or with the
   // whole series; that choice is offered inline instead of a browser confirm.
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const ownerName = event.owner_id === userId ? 'You' : (profiles[event.owner_id]?.display_name || 'Partner')
+  const ownerName = event.owner_id === userId ? 'You' : (profiles[event.owner_id]?.display_name || 'Other')
 
   if (editing) {
     return <FormMode initial={{ mode: 'edit', event }} session={session} onClose={onClose} />
@@ -87,11 +87,11 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
 
   // Show the time in the viewer's own zone, and — when the other user lives in
   // a different zone — the same instant in theirs, so the alignment is visible.
-  const myTz = browserTimeZone()
+  const viewerTz = browserTimeZone()
   const otherUser = Object.values(profiles).find((p) => p.id !== userId)
   const otherTz = otherUser?.timezone
   const showOtherTime =
-    !event.all_day && otherTz && otherTz !== myTz
+    !event.all_day && otherTz && otherTz !== viewerTz
 
   return (
     <Backdrop onClose={onClose}>
@@ -106,12 +106,12 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
             <dt className="text-lg font-bold">When</dt>
             <dd className="mt-0.5 text-base">
               {event.all_day ? (
-                formatDateInZone(start, myTz) + ' · All day'
+                formatDateInZone(start, viewerTz) + ' · All day'
               ) : (
                 <>
                   <div className="flex flex-wrap items-baseline gap-1.5">
-                    {formatDateInZone(start, myTz)} ·{' '}
-                    {formatTimeInZone(start, myTz)} – {formatTimeInZone(end, myTz)}
+                    {formatDateInZone(start, viewerTz)} ·{' '}
+                    {formatTimeInZone(start, viewerTz)} – {formatTimeInZone(end, viewerTz)}
                   </div>
                   {showOtherTime && (
                     <div className="mt-1 flex flex-wrap items-baseline gap-1.5 text-muted">
@@ -132,7 +132,7 @@ function ViewMode({ event, userId, profiles, onClose, session }) {
               <dt className="text-lg font-bold">Repeats</dt>
               <dd className="mt-0.5 text-base">
                 {recurrenceLabel(event)}
-                {event.recurrence_until && ` · until ${formatDateInZone(parseISO(event.recurrence_until), myTz)}`}
+                {event.recurrence_until && ` · until ${formatDateInZone(parseISO(event.recurrence_until), viewerTz)}`}
               </dd>
             </div>
           )}
@@ -235,7 +235,7 @@ function FormMode({ initial, session, onClose }) {
         // All-day events are a calendar date, not an instant: a birthday on
         // Jun 20 is Jun 20 in every zone. Anchoring to noon UTC keeps the date
         // stable when viewed from any realistic zone (instead of local midnight,
-        // which would drift the event onto the previous/next day for a partner
+        // which would drift the event onto the previous/next day for the other user
         // in another zone).
         start_at = `${dateStr}T12:00:00.000Z`
         end_at = `${dateStr}T12:00:00.000Z`

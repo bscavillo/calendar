@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 // Loads every profile (there are only two of you) keyed by user id, and keeps
-// them live so a name change shows up for both partners instantly.
+// them live so a name change shows up for both users instantly.
 export function useProfiles() {
   const [profiles, setProfiles] = useState({})
   const [loading, setLoading] = useState(true)
