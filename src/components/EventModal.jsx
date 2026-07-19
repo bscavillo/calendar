@@ -41,12 +41,12 @@ export default function EventModal({ session, profiles, primaryUserId, initial, 
   const event = initial.event
 
   if (isView && event) {
-    return <ViewMode event={event} userId={userId} profiles={profiles} onClose={onClose} session={session} />
+    return <ViewMode event={event} userId={userId} profiles={profiles} primaryUserId={primaryUserId} onClose={onClose} session={session} />
   }
   return <FormMode initial={initial} session={session} onClose={onClose} />
 }
 
-function ViewMode({ event, userId, profiles, onClose, session }) {
+function ViewMode({ event, userId, profiles, primaryUserId, onClose, session }) {
   const [editing, setEditing] = useState(false)
   // A repeating occurrence can be deleted on its own (just this one) or with the
   // whole series; that choice is offered inline instead of a browser confirm.
